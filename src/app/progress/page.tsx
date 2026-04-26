@@ -16,6 +16,7 @@ import {
   totals,
   type Progress,
 } from '@/lib/storage';
+import { track } from '@/lib/analytics';
 
 export default function ProgressPage() {
   const [progress, setProgress] = useState<Progress | null>(null);
@@ -254,6 +255,7 @@ export default function ProgressPage() {
               <button
                 onClick={() => {
                   if (confirm('Сбросить весь прогресс? Это нельзя отменить.')) {
+                    track('progress_reset', { totalCardsBeforeReset: t.attempts });
                     resetProgress();
                     setProgress(getProgress());
                   }
