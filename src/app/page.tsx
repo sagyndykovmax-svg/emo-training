@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { getProgress } from '@/lib/storage';
 import { DemoCard } from '@/components/DemoCard';
+import { track } from '@/lib/analytics';
 
 const HERO_FACES = [
   { src: '/training/joy-1.jpg', label: 'Радость', code: 'AU6 + AU12' },
@@ -95,7 +96,11 @@ export default function HomePage() {
               </p>
 
               <div className="flex flex-wrap items-center gap-4 mb-12">
-                <Link href="/train" className="btn btn-primary">
+                <Link
+                  href="/train"
+                  onClick={() => track('cta_clicked', { location: 'hero' })}
+                  className="btn btn-primary"
+                >
                   {stats.completed > 0 ? 'Продолжить' : 'Начать с базовых'}
                   <span aria-hidden>→</span>
                 </Link>
@@ -332,6 +337,7 @@ export default function HomePage() {
           </p>
           <Link
             href="/train"
+            onClick={() => track('cta_clicked', { location: 'secondary' })}
             className="inline-flex items-center gap-2 px-8 py-4 bg-bg text-ink font-medium hover:bg-accent hover:text-bg transition-colors"
           >
             {stats.completed > 0 ? 'Продолжить' : 'Начать с базовых эмоций'}

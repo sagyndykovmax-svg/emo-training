@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
+import { track } from '@/lib/analytics';
 
 /**
  * Self-contained mini-trainer for the landing page. Hardcoded single card so
@@ -41,8 +42,10 @@ export function DemoCard() {
 
   function handleAnswer(id: string) {
     if (phase !== 'question') return;
+    const opt = OPTIONS.find((o) => o.id === id);
     setChosenId(id);
     setPhase('feedback');
+    track('demo_answered', { correct: opt?.isCorrect ?? false });
   }
 
   const chosen = OPTIONS.find((o) => o.id === chosenId);
@@ -145,6 +148,7 @@ export function DemoCard() {
                 </p>
                 <Link
                   href="/train"
+                  onClick={() => track('cta_clicked', { location: 'demo' })}
                   className="inline-flex items-center gap-2 px-5 py-3 bg-bg text-ink font-medium hover:bg-accent hover:text-bg transition-colors"
                 >
                   Открыть полную тренировку <span aria-hidden>→</span>

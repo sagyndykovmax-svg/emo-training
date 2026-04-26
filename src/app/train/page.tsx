@@ -15,6 +15,7 @@ import {
   recordAnswer,
   totals,
 } from '@/lib/storage';
+import { track } from '@/lib/analytics';
 
 type Phase = 'question' | 'feedback' | 'tier-unlocked';
 
@@ -125,10 +126,20 @@ export default function TrainPage() {
     });
     setPhase('feedback');
     refreshProgressUI();
-    if (justUnlocked) setUnlockedTier(justUnlocked);
+    const updatedTotals = totals(getProgress());
+    track('card_answered', {
+      outcome: result,
+      tier: card.difficulty as 1 | 2 | 3,
+      total: updatedTotals.attempts,
+    });
+    if (justUnlocked) {
+      setUnlockedTier(justUnlocked);
+      track('tier_unlocked', { tier: justUnlocked });
+    }
     sessionCount.current += 1;
     if (sessionCount.current >= PAUSE_THRESHOLD && !pauseDismissed.current) {
       setShowPause(true);
+      track('pause_shown', { sessionCount: sessionCount.current });
     }
   }
 
@@ -318,6 +329,7 @@ export default function TrainPage() {
               pauseDismissed.current = true;
               setShowPause(false);
             }}
+            onOfframp={() => track('pause_offramp')}
           />
         )}
       </AnimatePresence>
@@ -411,9 +423,11 @@ function FeedbackPanel({
 function PauseModal({
   sessionCount,
   onDismiss,
+  onOfframp,
 }: {
   sessionCount: number;
   onDismiss: () => void;
+  onOfframp: () => void;
 }) {
   return (
     <motion.div
@@ -442,7 +456,7 @@ function PauseModal({
           Рассмотрите <strong>5-минутную паузу</strong> — встаньте, пройдитесь, посмотрите вдаль. Ваша точность на следующих карточках вырастет.
         </p>
         <div className="flex flex-col-reverse sm:flex-row gap-3">
-          <Link href="/progress" className="btn btn-ghost flex-1">
+          <Link href="/progress" className="btn btn-ghost flex-1" onClick={onOfframp}>
             Посмотреть прогресс
           </Link>
           <button onClick={onDismiss} className="btn btn-primary flex-1">
