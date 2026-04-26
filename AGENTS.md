@@ -20,9 +20,63 @@ This version (16.x) has breaking changes — APIs, conventions, and file structu
 ## Editing rules
 
 - **Always run `npm run build` before commit** — Next.js 16 catches type errors only in build, not dev. Dev compilation can pass while build fails.
-- Use the worktree at `C:\Users\Admin\Documents\GitHub\emo-training` directly — there's no separate worktree pattern in this project (single repo, single branch `main`).
 - Conventional commits with scope: `feat(train):`, `fix(progress):`, `chore(deps):`, etc.
 - Always include `Co-Authored-By: Claude Opus ... <noreply@anthropic.com>` trailer when Claude wrote the commit.
+
+## Git workflow — PR-based
+
+All non-trivial changes go through a feature branch + PR. **Never push directly to `main`** unless the user explicitly asks for it (e.g. tiny doc tweak).
+
+### Naming
+Feature branches: `feat/<short-name>`, `fix/<short-name>`, `chore/<short-name>`, `docs/<short-name>`.
+
+### Standard flow per change
+```bash
+# 1. Start clean from latest main
+git fetch origin
+git checkout main && git pull
+git checkout -b feat/<name>
+
+# 2. Make changes, commit conventionally
+git add <specific files>
+git commit -m "feat(scope): summary
+
+body...
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
+
+# 3. Push and open PR
+git push -u origin feat/<name>
+gh pr create --title "feat(scope): summary" --body "<see template below>"
+```
+
+### PR body template
+```markdown
+## Summary
+1-3 sentences on what changed and why.
+
+## Changes
+- bullet list of main edits
+
+## Test plan
+- [ ] `npm run build` passes
+- [ ] `npm run dev` — manual smoke test of touched pages
+- [ ] Mobile viewport check (DevTools)
+- [ ] Specific feature checks here
+
+## Deploy
+Vercel will autodeploy on merge to main. No env var changes needed.
+(Or: requires VAR_X — set in Vercel project settings before merge)
+```
+
+### When you can push directly to main (rare)
+- Trivial doc typo fixes
+- README badge updates
+- Untracked file added to `.gitignore`
+- User explicitly says "push directly"
+
+### Reset between PRs
+After PR merges, the feature branch can be deleted. Start the next change from a fresh `feat/<new-name>` branch.
 
 ## Deploy
 
