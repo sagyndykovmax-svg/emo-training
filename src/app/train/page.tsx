@@ -8,6 +8,7 @@ import { EMOTIONS, type EmotionId, TIER_TITLES } from '@/data/emotions';
 import { pickNextCard, TRAINING_CARDS, type TrainingCard } from '@/data/training_set';
 import { buildOptions, scoreAnswer, type Outcome } from '@/lib/scoring';
 import {
+  confusionCount,
   currentStreak,
   dueRanked,
   getProgress,
@@ -289,6 +290,11 @@ export default function TrainPage() {
                     chosenEmotion={chosen!}
                     outcome={outcome!}
                     recentErrors={recentErrors}
+                    confusionRepeats={
+                      outcome !== 'correct' && chosen
+                        ? confusionCount(getProgress(), correct.id, chosen)
+                        : 0
+                    }
                   />
                   {/* Desktop: inline button. Mobile: sticky bottom (rendered separately below) */}
                   <button onClick={nextCard} className="btn btn-primary mt-8 w-full md:w-auto hidden md:inline-flex">
@@ -342,11 +348,13 @@ function FeedbackPanel({
   chosenEmotion,
   outcome,
   recentErrors,
+  confusionRepeats,
 }: {
   correctEmotion: EmotionId;
   chosenEmotion: EmotionId;
   outcome: Outcome;
   recentErrors: number;
+  confusionRepeats: number;
 }) {
   const correct = EMOTIONS[correctEmotion];
   const chosen = EMOTIONS[chosenEmotion];
@@ -401,6 +409,34 @@ function FeedbackPanel({
           ))}
         </ul>
       </div>
+
+      {/* CONTRAST — what the user's choice would have implied */}
+      {outcome !== 'correct' && (
+        <div className="mb-8 p-4 sm:p-5 bg-bg-elev border border-rule">
+          <div className="eyebrow mb-3">Чем отличается от вашего выбора</div>
+          <p className="text-sm text-ink-2 leading-relaxed mb-4">
+            Если бы это была <strong>«{chosen.ru.toLowerCase()}»</strong>, вы бы видели на лице эти маркеры — а здесь их нет (или они выражены иначе):
+          </p>
+          <ul className="space-y-1.5">
+            {chosen.markers.map((m) => (
+              <li key={m} className="text-sm text-ink-3 leading-relaxed pl-5 relative">
+                <span className="absolute left-0 top-[0.7em] w-2 h-px bg-error" />
+                {highlightAU(m)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* PERSONAL PATTERN — learning-from-history nudge */}
+      {confusionRepeats >= 2 && (
+        <div className="mb-8 border-l-2 border-accent pl-4 py-1 text-sm leading-relaxed">
+          <strong className="text-ink">Замечено:</strong> вы уже{' '}
+          <strong className="text-accent">{confusionRepeats}</strong>{' '}
+          {confusionRepeats < 5 ? 'раза' : 'раз'} путали «{correct.ru.toLowerCase()}» с «{chosen.ru.toLowerCase()}». Главный различитель — обратите внимание на{' '}
+          <strong>{firstSentence(correct.markers[0])}</strong>.
+        </div>
+      )}
 
       {correct.analysis ? (
         <div>
@@ -500,6 +536,11 @@ function TierUnlockedModal({ tier, onClose }: { tier: 2 | 3; onClose: () => void
       </motion.div>
     </motion.div>
   );
+}
+
+function firstSentence(text: string): string {
+  const dash = text.indexOf(' — ');
+  return dash > 0 ? text.slice(0, dash + 2) + text.slice(dash + 3).split(/[,.;]/)[0].trim() : text;
 }
 
 function highlightAU(text: string) {

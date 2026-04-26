@@ -297,6 +297,19 @@ export interface Confusion {
   count: number;
 }
 
+/** Count how many times a specific (correct → chosen) confusion appeared. */
+export function confusionCount(
+  p: Progress,
+  correctId: EmotionId,
+  chosenId: EmotionId,
+): number {
+  let n = 0;
+  for (const r of p.recentAnswers) {
+    if (r.correctEmotion === correctId && r.chosenEmotion === chosenId) n++;
+  }
+  return n;
+}
+
 export function topConfusions(p: Progress, limit = 5): Confusion[] {
   const counts = new Map<string, Confusion>();
   for (const r of p.recentAnswers) {
