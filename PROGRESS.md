@@ -158,126 +158,89 @@ Surprise pair — единственный фундаментально слаб
 
 # Roadmap
 
-## High priority — следующая сессия
+Чистый список того, что осталось — после v0.5 (PR #1-#10 смержены: PR-флоу, spaced repetition, demo+pause, analytics, contrast feedback, authenticity A+B+C-lite, docs).
 
-### ✅ ЗАКРЫТО — Authenticity feature (PR #7 + #9)
-Реализованы Part A (surface tells), Part B (новый /authenticity режим с 6 парами), Part C-lite (persistence + SR + 4 ещё пары + dashboard). Tier IV-интеграция в /train намеренно отвергнута из-за UX overlap. Доступно как `/authenticity` route + блок «Сигналы фальши» в основном тренажёре.
+## ✅ Закрыто в этой серии PR
 
-### 0. (legacy) Authenticity / fake-vs-genuine detection — оригинальный план
-**Зачем:** физиогномика и FACS в первую очередь о том, **что под маской**. Уже частично закрыто Duchenne vs социальная улыбка и suppressed_anger, но не выделено как отдельный модуль.
+- [x] PR-based git workflow как стандарт (PR #1)
+- [x] SM-2-lite spaced repetition в /train (PR #2)
+- [x] Demo карточка на лендинге (PR #3)
+- [x] Pause modal после 15 карточек (PR #3)
+- [x] Vercel Analytics + типизированный wrapper (PR #4)
+- [x] Контраст-блок ответов + personal-pattern feedback (PR #5)
+- [x] «Сигналы фальши» в FeedbackPanel (PR #7 Part A)
+- [x] /authenticity standalone режим с 6 парами (PR #7 Part B)
+- [x] +4 пары + persistence + SR + dashboard tile (PR #9)
 
-**Что есть в данных уже:**
-- В `emotions_analysis.json` для каждой эмоции есть секция "Сигналы неискренности" — не surface'ится в UI
-- Tier 2 пары Дюшенн vs социальная — частично работают
-- Tier 3 suppressed anger — про подавленную мимику
+## 🔴 High priority — следующие сессии
 
-**Подходы (по сложности):**
+### 1. Real-face гибрид (3-4 ч)
+Curated Unsplash портретов (~20-30 шт) + опциональный режим `/real` или toggle в `/train`. Адресует главное возражение ревью: «AI-лица могут не переноситься в реальный мир». Сохраняем AI для пар (same-face consistency), добавляем real для базовых эмоций.
 
-**A — surface existing data (1-2 часа):**
-- Парсинг "Сигналы неискренности" из emotions_analysis.json в отдельное поле `inauthenticity_tells: string[]`
-- Дополнительный блок в FeedbackPanel: "🎭 Сигналы фальши для этой эмоции"
-- Опционально: страница /deception со сводным глоссарием universal tells (асимметрия, timing, leakage в нижней зоне)
+### 2. Google auth + cloud progress sync (4-6 ч)
+Прогресс между устройствами. Без этого high churn при смене браузера/устройства. Подходы: Supabase (Google OAuth + Postgres + free tier 500 MB), NextAuth + Vercel Postgres, Clerk. MVP-схема: `progress(user_id text PK, data jsonb, updated_at)`. Last-write-wins на конфликты, debounced upload на каждый recordAnswer.
 
-**B — новый card mode "Найди настоящее" (3-5 часов):**
-- Для 6-8 эмоций сгенерить ПАРНЫЕ карточки: одно лицо в двух выражениях (искреннее + натянутое)
-- Новый формат вопроса: "Какая улыбка/гнев/удивление настоящие?" — выбор из 2 фото
-- Использует Nano Banana same-face consistency (и так уже работает)
-- Стоимость генерации: ~16 новых картинок × $0.04 = ~$0.65
+### 3. AI-judge свободного ответа (3-4 ч)
+Пользователь пишет описание («вижу контролируемый гнев — лёгкое напряжение челюсти, прямой холодный взгляд»). GPT-4o оценивает с partial credit, объясняет что упустил. Глубже учит чем MCQ. Опасность: цена за токен; ограничить N запросов в день.
 
-**C — отдельный quiz-tier "Authenticity" (5-7 часов):**
-- Полноценный 4-й уровень "Различение фальши" — после Tier 3
-- 8-10 пар (искренняя/социальная улыбка, контролируемый/настоящий гнев, испуг/наигранный страх и т.п.)
-- Спец-метрика "deception detection accuracy" в /progress
+## 🟡 Medium priority
 
-Рекомендую **A → B** в одном PR (малый surface-existing + один new mode), C — отдельной сессией.
+### 4. Per-pair breakdown в /progress (1 ч)
+Сейчас authenticity показывается агрегатной accuracy. Drill into per-pair stats: какие пары стабильно проходишь, какие путаешь.
 
-### 1. Google auth + cloud progress sync
-**Зачем:** сейчас прогресс хранится только в localStorage — теряется при смене устройства, очистке браузера, инкогнито. Для пользовательского retention критично иметь синк.
+### 5. Confusion matrix heatmap (2 ч)
+Сейчас top-5 список конфузов. Сделать heatmap всех эмоций × всех эмоций, цвет = частота путаницы. На мобиле — скроллируемая таблица.
 
-**Подходы:**
-- **Supabase** (быстрее всего): Google OAuth из коробки, Postgres + Realtime, free tier 500 MB. Добавить `progress` таблицу с `user_id, json_blob`.
-- **NextAuth.js + Postgres** (Neon/Vercel Postgres): стандарт для Next, больше кода но больше контроля.
-- **Clerk** (самое быстрое UI): прекрасный UX, но vendor lock.
+### 6. Адаптивная сложность внутри тиров (2-3 ч)
+Текущий `pickNextCard` уже использует SR (PR #2), но это базовый SM-2-lite. Можно сделать честный per-card spacing вместо per-emotion, плюс учитывать time-to-answer как proxy сложности.
 
-**Минимальная схема:**
-```sql
-create table progress (
-  user_id text primary key,
-  data jsonb not null,
-  updated_at timestamptz default now()
-);
-```
-
-Логика синка: при `recordAnswer` — debounce 5 сек, потом upload merged blob. На init — если онлайн и логинен, fetch и merge с локальным.
-
-**Опасность:** конфликты при работе на 2 устройствах одновременно. MVP: last-write-wins с warning ("ваш прогресс с другого устройства новее, перезаписать?").
-
-### 2. Demo карточка прямо на лендинге
-**Зачем:** сейчас пользователь должен кликнуть "Начать" чтобы попробовать. Interactive preview одной карточки на лендинге = +20-30% conversion типично.
-
-**Реализация:** маленький виджет с одним hardcoded portrait, 4 опциями, после ответа коротким разбором + CTA "Начать полную тренировку".
-
-### 3. Pause / break suggestions
-**Зачем:** после 15-20 карточек подряд внимание садится, точность падает, обучение деградирует.
-
-**Реализация:** трек consecutive cards в одной сессии, после 15 показывать ненавязчивый dismissable nudge "Вы сделали 15 карточек подряд — рассмотрите 5-минутную паузу для лучшего удержания".
-
-## Medium priority
-
-### 4. Расширение базы знаний
-- Добавить раздел "Истоки физиогномики" с критической оценкой школ (academic honesty)
+### 7. Расширение базы знаний (2 ч)
+- Раздел "Истоки физиогномики" с критической оценкой школ (academic honesty)
 - Глоссарий FACS Action Units на отдельной странице
-- "Как определить когда ваше распознавание не работает" — culturally-bound emotions, autism spectrum, neurodivergence considerations
+- Cultural caveats — где маркеры работают / не работают кросс-культурно
 
-### 5. Confusion matrix визуализация в /progress
-Сейчас confusion показывается списком ("X → путаете с Y, 3 раз"). Сделать heatmap-таблицу со всеми эмоциями × всеми эмоциями, цвет = частота путаницы.
+### 8. SEO content pages (3 ч)
+- `/about` — про проект, источники, кто стоит
+- `/faq` — типовые вопросы
+- `/physiognomy-vs-science` — educational, для SEO + credibility
 
-### 6. Адаптивная сложность внутри тира
-Сейчас `pickNextCard` использует 60% bias к слабым категориям. Сделать честную spaced repetition — показывать слабые чаще пропорционально (1-accuracy) с floor.
+## 🟢 Low priority / nice-to-have
 
-### 7. Аналитика
-Plausible или PostHog. Слепая зона по реальному использованию — какие эмоции люди НИКОГДА не выбирают, на каких тирах массово отваливаются, среднее количество сессий до retention.
+### 9. Custom domain (30 мин)
+emo-training.vercel.app → что-то типа emoread.io или поддомен.
 
-### 8. Error boundary
-Один компонент-падение сейчас уроняет всю страницу. React Error Boundary вокруг `<TrainPage>` с fallback "Что-то пошло не так, перезагрузите".
+### 10. Error boundary (30 мин)
+React Error Boundary вокруг `<TrainPage>` и `<AuthenticityPage>` с fallback. Сейчас один компонент-краш роняет страницу.
 
-## Low priority / nice-to-have
+### 11. Mobile app via Capacitor (4-6 ч)
+По примеру `face`. Для iOS App Store потребуются disclaimers и review.
 
-### 9. Mobile app via Capacitor
-По примеру `face`. Для iOS App Store потребует disclaimers и review.
+### 12. Видео-карточки (8+ ч, большая фича)
+Короткие петли с микро-выражениями (1-2 сек). Качественное обучение с FACS требует динамики, не статики. Нужен новый источник материала (real video footage с лицензиями).
 
-### 10. Видео-карточки
-Короткие петли с микро-выражениями (1-2 сек). Качественное обучение с FACS требует динамики, не статики. Это серьёзная feature — нужен новый источник материала.
+### 13. Социальная функциональность (2 ч)
+Делиться результатом одного теста (одна карточка + ваш ответ + правильный). Leaderboard сознательно НЕ делать — несовместимо с серьёзностью продукта.
 
-### 11. AI-judge свободного ответа
-Пользователь пишет своё описание ("вижу контролируемый гнев — лёгкое напряжение челюсти, прямой холодный взгляд"). GPT-4o оценивает с partial credit, объясняет что упустил. Дороже но глубже учит, чем MCQ.
+## 🔧 Tech debt / hygiene
 
-### 12. A/B карточки в одном кадре
-Две версии одного лица — нужно выбрать "настоящую" эмоцию. Использовать same-face capability Nano Banana.
+- [ ] **Unit tests** (2-3 ч) — минимум на `scoreAnswer`, `pickNextCard`, `recordAnswer`, `recordAuthenticityAnswer`. Сейчас тестов нет вообще
+- [ ] **GitHub CI** (30 мин) — workflow с `npm run build` + `npm run lint` на каждый PR. Защищает main от broken коммитов навсегда
+- [ ] `scripts/image-prompts.ts` имеет 4 батча с разной структурой prompt'ов — унифицировать в `{ subjectPool, anatomicalCore, suffix }`
+- [ ] `extract-knowledge.ts` имеет dead code для парсинга pair-секций — удалить или дописать для будущей рекалибровки знаний
 
-### 13. Кастомный домен
-emo-training.vercel.app → что-то типа emoread.io или поддомен legacygroup или личный домен.
+## ⚠️ Известные ограничения (документация, не TODO)
 
-### 14. SEO content pages
-- /о-проекте (about)
-- /физиогномика-vs-наука (educational, для SEO + credibility)
-- /faq
+1. **Картинки = AI-generated.** Лучше academic datasets по контролю/лицензиям/разнообразию, но перенос на real-world recognition требует дополнительной верификации. Часть закрывается через #1 в High priority.
+2. **Static, не video.** FACS правильно работает с видео. Известное ограничение всех photo-based тренажёров. Адресуется через #12 (видео-карточки).
+3. **Cultural bias.** Большинство prompts — western faces. Научно физиогномические маркеры работают НЕ одинаково кросс-культурно. Каверы должны попасть в #7 (расширение базы знаний).
+4. **Self-paced без accountability.** Без аккаунтов нельзя видеть retention/drop-off/dau-mau на уровне пользователя. Адресуется через #2 (Google auth) + Vercel Analytics дашборд.
 
-### 15. Социальная функциональность
-- Делиться результатом своего теста (одна карточка + ваш ответ + правильный)
-- Сравнение по leaderboard (опасно для серьёзности продукта)
+---
 
-## Tech debt / hygiene
+## Рекомендуемый порядок взятия
 
-- В `extract-knowledge.ts` есть код парсинга pair-секций который не использовался — удалить или оставить с TODO для следующей рекалибровки знаний
-- `scripts/image-prompts.ts` имеет два батча с разной структурой (полные prompts vs compact) — унифицировать в `{ subjectPool, anatomicalCore, suffix }` для будущих расширений
-- `next-env.d.ts` периодически модифицируется next dev'ом — добавлено в `.gitignore`? проверить
-- Нет тестов вообще. Минимально — unit на `scoreAnswer`, `pickNextCard`, `recordAnswer` (storage логика).
-- Нет CI на GitHub — добавить workflow с `npm run build` + `npm run lint` на PR
+**Самый высокий ROI:** #1 (real-face гибрид) — закрывает главное возражение ревью.
+**Самое инфраструктурно важное:** #2 (Google auth) — без него весь прогресс теряется.
+**Самый дешёвый win:** GitHub CI (30 мин) — защищает main от broken коммитов навсегда.
 
-## Известные ограничения (для документации, не TODO)
-
-1. **Картинки = AI-generated.** Не реальные люди в реальных эмоциональных состояниях. Это лучше academic licensed datasets для нашего use case (контроль, лицензии, разнообразие), но переход на real-world recognition требует дополнительной верификации навыка.
-2. **Static не video.** FACS правильно работает с видео, не статикой. Это известное ограничение всех photo-based emotion trainers.
-3. **Cultural bias.** Большинство prompts — Western faces. Нет верификации, что физиогномические маркеры работают одинаково кросс-культурно (научно — не работают полностью).
-4. **Self-paced без accountability.** Без аккаунтов нельзя видеть % retention, drop-off, dau/mau.
+Остальное по запросу или по реальным сигналам из Vercel Analytics после накопления usage.
