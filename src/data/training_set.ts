@@ -117,23 +117,51 @@ export const TRAINING_CARDS: TrainingCard[] = [
   { id: 'anxiety-4', imagePath: '/training/anxiety-4.jpg', emotionId: 'anxiety', difficulty: 3 },
 ];
 
+/**
+ * Card selection with spaced-repetition priority.
+ *
+ * Order of priority:
+ *   1. **Due-for-review emotions** (scheduled by `recordAnswer`). The most
+ *      overdue emotion's cards win. Within that emotion, prefer the card the
+ *      user has seen LEAST RECENTLY (so we don't repeat the exact same image).
+ *   2. **Unseen cards** at this tier.
+ *   3. **Random fallback** at this tier.
+ *
+ * `dueRanked` and `recentCardIds` arrive pre-computed from the caller (the
+ * training page) — keeping this module storage-free for testability.
+ */
 export function pickNextCard(opts: {
   unlockedTier: 1 | 2 | 3;
   seenCardIds: string[];
-  weakEmotions?: EmotionId[];
+  /** Emotion ids ordered by how overdue they are (most overdue first). */
+  dueRanked?: EmotionId[];
+  /** The exact card ids user saw most recently — to avoid back-to-back repeats. */
+  recentCardIds?: string[];
 }): TrainingCard | null {
   const eligible = TRAINING_CARDS.filter((c) => c.difficulty <= opts.unlockedTier);
   if (eligible.length === 0) return null;
 
-  // Prefer unseen cards.
-  const unseen = eligible.filter((c) => !opts.seenCardIds.includes(c.id));
-  let pool = unseen.length > 0 ? unseen : eligible;
+  const recentSet = new Set(opts.recentCardIds?.slice(0, 5) ?? []);
 
-  // If user has weak categories, bias selection toward those.
-  if (opts.weakEmotions && opts.weakEmotions.length > 0) {
-    const weakPool = pool.filter((c) => opts.weakEmotions!.includes(c.emotionId));
-    if (weakPool.length > 0 && Math.random() < 0.6) pool = weakPool;
+  // 1. Due for review — pick the most overdue emotion's least-recently-seen card.
+  if (opts.dueRanked && opts.dueRanked.length > 0) {
+    for (const emotionId of opts.dueRanked) {
+      const cards = eligible.filter((c) => c.emotionId === emotionId && !recentSet.has(c.id));
+      if (cards.length > 0) {
+        // Prefer unseen cards within the due emotion.
+        const unseen = cards.filter((c) => !opts.seenCardIds.includes(c.id));
+        const pool = unseen.length > 0 ? unseen : cards;
+        return pool[Math.floor(Math.random() * pool.length)];
+      }
+    }
   }
 
+  // 2. Unseen at this tier.
+  const unseen = eligible.filter((c) => !opts.seenCardIds.includes(c.id) && !recentSet.has(c.id));
+  if (unseen.length > 0) return unseen[Math.floor(Math.random() * unseen.length)];
+
+  // 3. Random fallback (excluding recently-seen).
+  const pool = eligible.filter((c) => !recentSet.has(c.id));
+  if (pool.length === 0) return eligible[Math.floor(Math.random() * eligible.length)];
   return pool[Math.floor(Math.random() * pool.length)];
 }
