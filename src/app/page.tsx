@@ -36,7 +36,7 @@ export default function HomePage() {
     <main className="min-h-screen flex flex-col">
       {/* HEADER */}
       <header className="border-b border-rule">
-        <div className="max-w-[88rem] mx-auto px-8 py-5 flex items-center justify-between">
+        <div className="max-w-[88rem] mx-auto px-4 sm:px-8 py-4 sm:py-5 flex items-center justify-between">
           <Link href="/" className="flex items-baseline gap-3">
             <span className="display text-2xl">Emotion Training</span>
             <span className="eyebrow hidden md:inline">№ 01 · 2026</span>
@@ -54,7 +54,7 @@ export default function HomePage() {
 
       {/* HERO — editorial poster with portrait */}
       <section className="border-b border-rule">
-        <div className="max-w-[88rem] mx-auto px-8 py-16 lg:py-20">
+        <div className="max-w-[88rem] mx-auto px-4 sm:px-8 py-16 lg:py-20">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -83,7 +83,7 @@ export default function HomePage() {
 
             {/* Hero text */}
             <div className="lg:col-span-7">
-              <h1 className="display text-[clamp(3rem,8.5vw,8.5rem)] mb-10">
+              <h1 className="display text-[clamp(3.25rem,8.5vw,8.5rem)] mb-8 lg:mb-10">
                 Читать лица —<br />
                 <span className="display-italic text-accent">не угадывать</span> эмоции.
               </h1>
@@ -138,7 +138,7 @@ export default function HomePage() {
 
       {/* PORTRAIT GALLERY — strip of categories */}
       <section className="border-b border-rule bg-bg-elev">
-        <div className="max-w-[88rem] mx-auto px-8 py-16 lg:py-20">
+        <div className="max-w-[88rem] mx-auto px-4 sm:px-8 py-16 lg:py-20">
           <div className="grid lg:grid-cols-12 gap-8 mb-12">
             <div className="lg:col-span-2 eyebrow">Образцы карточек</div>
             <div className="lg:col-span-10">
@@ -179,7 +179,7 @@ export default function HomePage() {
 
       {/* DIFFERENTIATORS — magazine three-column */}
       <section className="border-b border-rule">
-        <div className="max-w-[88rem] mx-auto px-8 py-20 lg:py-28">
+        <div className="max-w-[88rem] mx-auto px-4 sm:px-8 py-20 lg:py-28">
           <div className="grid lg:grid-cols-12 gap-8 mb-16">
             <div className="lg:col-span-2 eyebrow">Чем отличается</div>
             <h2 className="lg:col-span-10 display text-[clamp(2rem,5vw,4.5rem)] max-w-4xl">
@@ -210,7 +210,7 @@ export default function HomePage() {
 
       {/* TIERS DETAIL — like a table of contents */}
       <section className="border-b border-rule bg-bg-elev">
-        <div className="max-w-[88rem] mx-auto px-8 py-20 lg:py-28">
+        <div className="max-w-[88rem] mx-auto px-4 sm:px-8 py-20 lg:py-28">
           <div className="grid lg:grid-cols-12 gap-8 mb-16">
             <div className="lg:col-span-2 eyebrow">Содержание</div>
             <h2 className="lg:col-span-10 display text-[clamp(2rem,5vw,4.5rem)]">
@@ -247,7 +247,7 @@ export default function HomePage() {
 
       {/* AUDIENCE */}
       <section className="border-b border-rule">
-        <div className="max-w-[88rem] mx-auto px-8 py-20 lg:py-28">
+        <div className="max-w-[88rem] mx-auto px-4 sm:px-8 py-20 lg:py-28">
           <div className="grid lg:grid-cols-12 gap-8 mb-16">
             <div className="lg:col-span-2 eyebrow">Аудитория</div>
             <h2 className="lg:col-span-10 display text-[clamp(2rem,5vw,4.5rem)] max-w-4xl">
@@ -275,10 +275,61 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* SCOPE & DISCLAIMER */}
+      <section className="border-b border-rule">
+        <div className="max-w-[88rem] mx-auto px-4 sm:px-8 py-16 lg:py-24">
+          <div className="grid lg:grid-cols-12 gap-8 mb-12">
+            <div className="lg:col-span-2 eyebrow">Корректно понимать</div>
+            <h2 className="lg:col-span-10 display text-[clamp(1.75rem,4vw,3.5rem)] max-w-3xl">
+              На что это <span className="display-italic">и на что не</span>.
+            </h2>
+          </div>
+          <div className="grid md:grid-cols-2 gap-8 lg:gap-16 max-w-5xl">
+            <div>
+              <div className="eyebrow text-success mb-4">Что вы получаете</div>
+              <ul className="space-y-3 text-ink-2 leading-relaxed text-[0.9375rem]">
+                <li className="pl-5 relative"><span className="absolute left-0 top-2 w-2 h-px bg-success" />Тренировку наблюдательности — насмотренность к мимическим маркерам</li>
+                <li className="pl-5 relative"><span className="absolute left-0 top-2 w-2 h-px bg-success" />Навык различения похожих эмоций — страх vs удивление, грусть vs усталость, искренняя vs социальная улыбка</li>
+                <li className="pl-5 relative"><span className="absolute left-0 top-2 w-2 h-px bg-success" />Знакомство с системой FACS Пола Экмана — научно валидированной классификацией мимических движений</li>
+                <li className="pl-5 relative"><span className="absolute left-0 top-2 w-2 h-px bg-success" />Контекст из исторической физиогномической традиции (Лафатер, Хигир, Велховер) как культурно-смысловое расширение</li>
+              </ul>
+            </div>
+            <div>
+              <div className="eyebrow text-error mb-4">Что не утверждается</div>
+              <ul className="space-y-3 text-ink-2 leading-relaxed text-[0.9375rem]">
+                <li className="pl-5 relative"><span className="absolute left-0 top-2 w-2 h-px bg-error" />Это не научная диагностика характера. Современная психология не подтверждает, что черты лица предсказывают личность</li>
+                <li className="pl-5 relative"><span className="absolute left-0 top-2 w-2 h-px bg-error" />Это не криминологический инструмент. Идеи Ломброзо и физиогномика XIX века использовались для дискриминации — мы цитируем их как исторический контекст, а не как руководство</li>
+                <li className="pl-5 relative"><span className="absolute left-0 top-2 w-2 h-px bg-error" />Это не замена профессиональной оценке. Реальное чтение людей требует контекста, динамики, многомодальных сигналов и осторожности с выводами</li>
+                <li className="pl-5 relative"><span className="absolute left-0 top-2 w-2 h-px bg-error" />Это не «детектор лжи». Совпадение мимических маркеров с эмоцией ≠ установление истины</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECONDARY CTA */}
+      <section className="border-b border-rule bg-ink text-bg">
+        <div className="max-w-[88rem] mx-auto px-4 sm:px-8 py-16 lg:py-20 text-center">
+          <h2 className="display text-[clamp(2rem,5vw,4.5rem)] mb-6 text-bg">
+            Готовы <span className="display-italic text-accent">начать</span> тренировку?
+          </h2>
+          <p className="text-bg/70 max-w-xl mx-auto mb-8 leading-relaxed">
+            Ваш прогресс сохраняется в браузере — без регистрации, без аккаунтов. Бросайте в любой момент, возвращайтесь когда удобно.
+          </p>
+          <Link
+            href="/train"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-bg text-ink font-medium hover:bg-accent hover:text-bg transition-colors"
+          >
+            {stats.completed > 0 ? 'Продолжить' : 'Начать с базовых эмоций'}
+            <span aria-hidden>→</span>
+          </Link>
+        </div>
+      </section>
+
       <footer>
-        <div className="max-w-[88rem] mx-auto px-8 py-10 flex flex-wrap gap-4 justify-between text-sm text-ink-3">
-          <span>Emotion Training · v0.1 · 2026</span>
-          <span>Часть экосистемы инструментов самопознания</span>
+        <div className="max-w-[88rem] mx-auto px-4 sm:px-8 py-10 flex flex-wrap gap-4 justify-between text-sm text-ink-3">
+          <span>Emotion Training · v0.2 · 2026</span>
+          <span className="text-right">Часть экосистемы инструментов самопознания</span>
         </div>
       </footer>
     </main>

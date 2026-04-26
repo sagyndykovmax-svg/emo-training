@@ -38,7 +38,7 @@
   --color-success: var(--success);
   --color-error: var(--error);
   --font-sans: var(--font-inter);
-  --font-serif: var(--font-fraunces);
+  --font-serif: var(--font-source-serif);
   --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
 }
 
@@ -68,13 +68,13 @@ body {
   letter-spacing: -0.02em;
   line-height: 0.92;
   /* Variable axes — display optical size, slight wonk for character */
-  font-variation-settings: "opsz" 144, "SOFT" 50, "WONK" 0;
+  font-variation-settings: "opsz" 36;
 }
 .display-italic {
   font-family: var(--font-serif), Georgia, serif;
   font-style: italic;
   font-weight: 400;
-  font-variation-settings: "opsz" 144, "SOFT" 100, "WONK" 1;
+  font-variation-settings: "opsz" 36;
   letter-spacing: -0.015em;
 }
 
@@ -95,7 +95,7 @@ body {
 .poster-num {
   font-family: var(--font-serif), Georgia, serif;
   font-weight: 400;
-  font-variation-settings: "opsz" 144, "SOFT" 100;
+  font-variation-settings: "opsz" 36;
   font-size: 4rem;
   line-height: 1;
   color: var(--ink);
@@ -109,7 +109,7 @@ body {
   line-height: 1.7;
   color: var(--ink);
   font-feature-settings: "onum", "kern";
-  font-variation-settings: "opsz" 14, "SOFT" 0;
+  font-variation-settings: "opsz" 14;
 }
 .prose-analysis p { margin-bottom: 1.05em; }
 .prose-analysis p:last-child { margin-bottom: 0; }
@@ -117,7 +117,6 @@ body {
 .prose-analysis em {
   color: var(--accent);
   font-style: italic;
-  font-variation-settings: "opsz" 14, "SOFT" 50, "WONK" 1;
 }
 
 /* Inline AU code highlight */
@@ -170,12 +169,13 @@ body {
 }
 .btn-ghost:hover { background: var(--ink); color: var(--bg); }
 
-/* Option button — magazine list item */
+/* Option button — magazine list item, ≥44px touch target */
 .opt {
   display: block;
   width: 100%;
   text-align: left;
-  padding: 1rem 1.25rem;
+  padding: 0.875rem 1.125rem;
+  min-height: 48px;
   background: transparent;
   border: 1px solid var(--rule);
   border-radius: 0;
@@ -184,14 +184,28 @@ body {
   transition: all 120ms ease;
   cursor: pointer;
   font-weight: 450;
+  line-height: 1.4;
 }
 .opt:hover {
   border-color: var(--ink);
   background: var(--bg-elev);
 }
+.opt:active {
+  background: var(--accent-tint);
+  transform: scale(0.997);
+}
 .opt:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* iOS safe-area for sticky bottom CTA */
+.safe-bottom {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
 }
 
 /* Vertical caption — used beside the portrait image */

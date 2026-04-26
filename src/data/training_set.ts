@@ -70,6 +70,51 @@ export const TRAINING_CARDS: TrainingCard[] = [
   { id: 'suppressed-anger-2', imagePath: '/training/suppressed-anger-2.jpg', emotionId: 'suppressed_anger', difficulty: 3 },
   { id: 'anxiety-1', imagePath: '/training/anxiety-1.jpg', emotionId: 'anxiety', difficulty: 3 },
   { id: 'anxiety-2', imagePath: '/training/anxiety-2.jpg', emotionId: 'anxiety', difficulty: 3 },
+
+  // ─── BATCH 2: deeper variety per category (added v0.2) ───────────────────
+  // Tier 1
+  { id: 'joy-3', imagePath: '/training/joy-3.jpg', emotionId: 'joy', difficulty: 1 },
+  { id: 'joy-4', imagePath: '/training/joy-4.jpg', emotionId: 'joy', difficulty: 1 },
+  { id: 'sadness-3', imagePath: '/training/sadness-3.jpg', emotionId: 'sadness', difficulty: 1 },
+  { id: 'sadness-4', imagePath: '/training/sadness-4.jpg', emotionId: 'sadness', difficulty: 1 },
+  { id: 'anger-3', imagePath: '/training/anger-3.jpg', emotionId: 'anger', difficulty: 1 },
+  { id: 'anger-4', imagePath: '/training/anger-4.jpg', emotionId: 'anger', difficulty: 1 },
+  { id: 'fear-3', imagePath: '/training/fear-3.jpg', emotionId: 'fear', difficulty: 1 },
+  { id: 'fear-4', imagePath: '/training/fear-4.jpg', emotionId: 'fear', difficulty: 1 },
+  { id: 'surprise-3', imagePath: '/training/surprise-3.jpg', emotionId: 'surprise', difficulty: 1 },
+  { id: 'surprise-4', imagePath: '/training/surprise-4.jpg', emotionId: 'surprise', difficulty: 1 },
+  { id: 'disgust-3', imagePath: '/training/disgust-3.jpg', emotionId: 'disgust', difficulty: 1 },
+  { id: 'disgust-4', imagePath: '/training/disgust-4.jpg', emotionId: 'disgust', difficulty: 1 },
+  { id: 'contempt-3', imagePath: '/training/contempt-3.jpg', emotionId: 'contempt', difficulty: 1 },
+  { id: 'contempt-4', imagePath: '/training/contempt-4.jpg', emotionId: 'contempt', difficulty: 1 },
+
+  // Tier 2
+  { id: 'duchenne-3', imagePath: '/training/duchenne-3.jpg', emotionId: 'duchenne_smile', difficulty: 2 },
+  { id: 'duchenne-4', imagePath: '/training/duchenne-4.jpg', emotionId: 'duchenne_smile', difficulty: 2 },
+  { id: 'social-3', imagePath: '/training/social-3.jpg', emotionId: 'social_smile', difficulty: 2 },
+  { id: 'social-4', imagePath: '/training/social-4.jpg', emotionId: 'social_smile', difficulty: 2 },
+  { id: 'fearVs-2', imagePath: '/training/fearVs-2.jpg', emotionId: 'fear_vs_surprise_F', difficulty: 2 },
+  { id: 'fearVs-3', imagePath: '/training/fearVs-3.jpg', emotionId: 'fear_vs_surprise_F', difficulty: 2 },
+  { id: 'surpVs-2', imagePath: '/training/surpVs-2.jpg', emotionId: 'fear_vs_surprise_S', difficulty: 2 },
+  { id: 'surpVs-3', imagePath: '/training/surpVs-3.jpg', emotionId: 'fear_vs_surprise_S', difficulty: 2 },
+  { id: 'controlled-anger-3', imagePath: '/training/controlled-anger-3.jpg', emotionId: 'controlled_anger', difficulty: 2 },
+  { id: 'controlled-anger-4', imagePath: '/training/controlled-anger-4.jpg', emotionId: 'controlled_anger', difficulty: 2 },
+  { id: 'sadness-vs-2', imagePath: '/training/sadness-vs-2.jpg', emotionId: 'sadness_vs_fatigue_S', difficulty: 2 },
+  { id: 'sadness-vs-3', imagePath: '/training/sadness-vs-3.jpg', emotionId: 'sadness_vs_fatigue_S', difficulty: 2 },
+  { id: 'fatigue-vs-2', imagePath: '/training/fatigue-vs-2.jpg', emotionId: 'sadness_vs_fatigue_F', difficulty: 2 },
+  { id: 'fatigue-vs-3', imagePath: '/training/fatigue-vs-3.jpg', emotionId: 'sadness_vs_fatigue_F', difficulty: 2 },
+  { id: 'shame-2', imagePath: '/training/shame-2.jpg', emotionId: 'shame', difficulty: 2 },
+  { id: 'shame-3', imagePath: '/training/shame-3.jpg', emotionId: 'shame', difficulty: 2 },
+  { id: 'guilt-2', imagePath: '/training/guilt-2.jpg', emotionId: 'guilt', difficulty: 2 },
+  { id: 'guilt-3', imagePath: '/training/guilt-3.jpg', emotionId: 'guilt', difficulty: 2 },
+
+  // Tier 3
+  { id: 'nostalgia-3', imagePath: '/training/nostalgia-3.jpg', emotionId: 'nostalgia', difficulty: 3 },
+  { id: 'nostalgia-4', imagePath: '/training/nostalgia-4.jpg', emotionId: 'nostalgia', difficulty: 3 },
+  { id: 'suppressed-anger-3', imagePath: '/training/suppressed-anger-3.jpg', emotionId: 'suppressed_anger', difficulty: 3 },
+  { id: 'suppressed-anger-4', imagePath: '/training/suppressed-anger-4.jpg', emotionId: 'suppressed_anger', difficulty: 3 },
+  { id: 'anxiety-3', imagePath: '/training/anxiety-3.jpg', emotionId: 'anxiety', difficulty: 3 },
+  { id: 'anxiety-4', imagePath: '/training/anxiety-4.jpg', emotionId: 'anxiety', difficulty: 3 },
 ];
 
 export function pickNextCard(opts: {

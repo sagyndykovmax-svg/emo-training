@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Fraunces } from "next/font/google";
+import { Inter, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -7,23 +7,33 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-const fraunces = Fraunces({
+const sourceSerif = Source_Serif_4({
   subsets: ["latin", "cyrillic"],
-  variable: "--font-fraunces",
-  axes: ["SOFT", "WONK", "opsz"],
+  variable: "--font-source-serif",
   style: ["normal", "italic"],
+  axes: ["opsz"],
 });
 
 export const metadata: Metadata = {
   title: "Emotion Training — тренажёр чтения эмоций по лицу",
   description:
-    "Систематическая тренировка навыка распознавания эмоций по выражению лица на основе физиогномической традиции. Для рекрутеров, HR и всех, кто хочет научиться читать людей.",
+    "Систематическая тренировка распознавания эмоций по мимическим маркерам. Глубокий разбор каждой карточки на основе FACS Экмана и физиогномической традиции. Для рекрутеров, HR и всех, кто хочет научиться читать людей.",
+  metadataBase: new URL("https://emo-training.vercel.app"),
   openGraph: {
-    title: "Emotion Training",
-    description: "Тренажёр чтения эмоций по лицу — глубина физиогномики, не угадайка.",
+    title: "Emotion Training — читать лица, не угадывать эмоции",
+    description: "Тренажёр распознавания эмоций по лицу. 70 карточек, 19 эмоций, 3 уровня. Глубокий разбор каждого ответа на основе FACS и физиогномической традиции.",
     type: "website",
     siteName: "Emotion Training",
+    locale: "ru_RU",
+    images: [{ url: "/og-cover.jpg", width: 1200, height: 630, alt: "Emotion Training" }],
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "Emotion Training",
+    description: "Читать лица, не угадывать эмоции. 70 карточек × 19 эмоций × 3 уровня.",
+    images: ["/og-cover.jpg"],
+  },
+  robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {
@@ -36,7 +46,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ru" className={`${inter.variable} ${fraunces.variable}`}>
+    <html lang="ru" className={`${inter.variable} ${sourceSerif.variable}`}>
       <body>{children}</body>
     </html>
   );

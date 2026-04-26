@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://emo-training.vercel.app/sitemap.xml

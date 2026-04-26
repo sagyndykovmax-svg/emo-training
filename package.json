@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "generate:images": "tsx scripts/generate-images.ts",
+    "compress:images": "tsx scripts/compress-images.ts",
     "extract:knowledge": "tsx scripts/extract-knowledge.ts"
   },
   "dependencies": {
@@ -25,6 +26,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.2",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "tsx": "^4.19.2",
     "typescript": "^5"
