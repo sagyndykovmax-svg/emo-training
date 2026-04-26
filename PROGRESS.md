@@ -1,5 +1,39 @@
 # Progress Log
 
+## v0.4 — 2026-04-26 (authenticity training)
+
+Адресует предложение профайлера: «добавить что-то для отличия искренних эмоций от фальши». Реализовано двумя слоями в одном PR.
+
+### Part A — Surface existing inauthenticity tells
+- `src/data/inauthenticity_tells.json` — hand-extracted «Сигналы неискренности» из NotebookLM-разборов для 11 эмоций (7 базовых + ключевые Tier 2/3)
+- Новое поле `inauthenticityTells?: string` в `EmotionMeta`, мерджится в `EMOTIONS` map при init
+- В `FeedbackPanel` после каждого ответа теперь блок «🎭 Сигналы фальши» с диагностикой подделки текущей эмоции
+- Каждая карточка основного тренажёра становится уроком по детекции лжи
+
+### Part B — Новый режим `/authenticity`
+- 6 пар genuine/performed: joy, sadness, anger, surprise, fear, contempt
+- 12 новых картинок через Nano Banana (~$0.50)
+- Side-by-side выбор A/B с рандомизированной стороной (genuine может быть слева или справа)
+- После ответа — оба изображения остаются с тегами «Настоящее»/«Наигранное», подсвечен выбор пользователя, потом one-liner tell + параграф объяснения
+- Циклит через пары в shuffled порядке; reshuffles на лупе
+- Session accuracy в header (per-pair stats не персистится — это сейчас session-only режим)
+- Новая секция «Различить настоящее» на лендинге с CTA в `/authenticity`
+- Добавлено в sitemap.xml как priority 0.85
+
+### Качество картинок (честный аудит)
+| Пара | Genuine | Performed | Контраст |
+|---|---|---|---|
+| Joy | ✅ deep crow's feet | ✅ smooth eyes | strong |
+| Sadness | ✅ AU1 visible | ⚠️ neutralнее ожидаемого | моderate |
+| Anger | ✅ AU4+5+7 cohesive | ⚠️ subtle | moderate |
+| Surprise | ⚠️ статика не передаёт timing | ⚠️ статика не передаёт timing | weak — отражено в copy |
+| Fear | ✅ AU4+AU20 диагностические | ✅ clean arches | strong |
+| Contempt | ⚠️ subtle асимметрия | ✅ симметричный smug smile | moderate |
+
+Surprise pair — единственный фундаментально слабый из-за природы эмоции (статика не показывает длительность). В explanation честно об этом сказано.
+
+---
+
 ## v0.3 — 2026-04-26 (отклик на внешний ревью)
 
 Сессия после внешнего ревью продукта (UI/UX senior, маркетолог, психолог, профайлер, BE/FE, mobile + сторонний reviewer). Основные критические тезисы и наши ответы:
