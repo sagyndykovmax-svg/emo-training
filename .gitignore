@@ -38,3 +38,5 @@ Thumbs.db
 data/raw_knowledge/
 data/drafts/
 public/training/_drafts/
+
+.vercel
