@@ -264,6 +264,30 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* AUTHENTICITY MODE — separate trainer */}
+      <section className="border-b border-rule">
+        <div className="max-w-[88rem] mx-auto px-4 sm:px-8 py-16 lg:py-24">
+          <div className="grid lg:grid-cols-12 gap-8 items-baseline">
+            <div className="lg:col-span-2 eyebrow">Отдельный режим</div>
+            <div className="lg:col-span-10">
+              <h2 className="display text-[clamp(2rem,5vw,4.5rem)] mb-6 max-w-4xl">
+                Различить <span className="display-italic text-accent">настоящее</span> от наигранного.
+              </h2>
+              <p className="text-base sm:text-lg text-ink-2 max-w-2xl leading-snug mb-8">
+                Парные кадры — одна эмоция в двух исполнениях: подлинное и сыгранное. Узнать настоящее — самый ценный навык физиогномики, потому что только это работает в реальной жизни.
+              </p>
+              <Link
+                href="/authenticity"
+                onClick={() => track('cta_clicked', { location: 'demo' })}
+                className="btn btn-ghost"
+              >
+                Открыть тренажёр различения <span aria-hidden>→</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* AUDIENCE */}
       <section className="border-b border-rule">
         <div className="max-w-[88rem] mx-auto px-4 sm:px-8 py-20 lg:py-28">
