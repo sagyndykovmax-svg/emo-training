@@ -1,0 +1,40 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# next
+.next/
+out/
+build/
+next-env.d.ts.bak
+
+# testing
+coverage/
+
+# env / secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# os / editor
+.DS_Store
+*.pem
+.vscode/
+.idea/
+Thumbs.db
+
+# typescript build info
+*.tsbuildinfo
+
+# generated knowledge / image drafts (kept out of repo until curated)
+data/raw_knowledge/
+data/drafts/
+public/training/_drafts/

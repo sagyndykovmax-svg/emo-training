@@ -1,0 +1,16 @@
+{
+  "name": "Emotion Training",
+  "short_name": "EmoTrain",
+  "description": "Тренажёр распознавания эмоций по выражению лица на основе физиогномики",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fafaf8",
+  "theme_color": "#fafaf8",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
