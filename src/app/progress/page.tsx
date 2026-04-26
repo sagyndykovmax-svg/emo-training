@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { EMOTIONS, TIER_TITLES, type EmotionId, type Tier } from '@/data/emotions';
 import {
+  authenticityTotals,
   bestStreak,
   currentStreak,
   dueRanked,
@@ -34,6 +35,7 @@ export default function ProgressPage() {
   const best = bestStreak(progress);
   const nextTier = progressToNextTier(progress);
   const due = dueRanked(progress);
+  const authTotals = authenticityTotals(progress);
 
   return (
     <main className="min-h-screen flex flex-col">
@@ -159,6 +161,34 @@ export default function ProgressPage() {
                     )}
                   </div>
                 </div>
+              </section>
+            )}
+
+            {/* AUTHENTICITY — deception detection accuracy */}
+            {authTotals.attempts > 0 && (
+              <section className="mb-16 border-l-2 border-accent pl-5 sm:pl-8 py-2">
+                <div className="eyebrow mb-3">Различение настоящего от фальши</div>
+                <div className="flex flex-wrap items-baseline gap-4 sm:gap-8 mb-3">
+                  <div>
+                    <div className="display text-4xl sm:text-5xl tnum">
+                      {Math.round(authTotals.accuracy * 100)}%
+                    </div>
+                    <div className="eyebrow mt-1">Точность детекции</div>
+                  </div>
+                  <div>
+                    <div className="display text-2xl tnum text-ink-2">
+                      {authTotals.attempts}
+                    </div>
+                    <div className="eyebrow mt-1">Пар пройдено</div>
+                  </div>
+                </div>
+                <p className="text-sm text-ink-3 leading-relaxed mt-4 max-w-2xl">
+                  Это самый прикладной навык физиогномики. Точность ниже общей по тренажёру —
+                  естественно: подделать мимику легче, чем заметить подделку.{' '}
+                  <Link href="/authenticity" className="text-accent hover:underline">
+                    Продолжить тренировку различения →
+                  </Link>
+                </p>
               </section>
             )}
 

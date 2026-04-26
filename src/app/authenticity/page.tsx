@@ -3,54 +3,101 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AUTHENTICITY_PAIRS, type AuthenticityPair } from '@/data/authenticity_pairs';
+import {
+  authenticityDueRanked,
+  authenticityTotals,
+  getProgress,
+  recordAuthenticityAnswer,
+} from '@/lib/storage';
 import { track } from '@/lib/analytics';
 
 type Phase = 'question' | 'feedback';
 type Side = 'genuine' | 'performed';
 
 export default function AuthenticityPage() {
-  const [order, setOrder] = useState<AuthenticityPair[]>([]);
-  const [index, setIndex] = useState(0);
+  const [pair, setPair] = useState<AuthenticityPair | null>(null);
   const [phase, setPhase] = useState<Phase>('question');
   const [chosen, setChosen] = useState<Side | null>(null);
-  // For each pair, which side (left vs right) holds the genuine image — randomized per card.
   const [genuineOnLeft, setGenuineOnLeft] = useState(true);
-  const [stats, setStats] = useState({ correct: 0, total: 0 });
+  const [persistentStats, setPersistentStats] = useState({ attempts: 0, correct: 0, accuracy: 0 });
   const [imageError, setImageError] = useState({ left: false, right: false });
+  const recentPairIds = useRef<string[]>([]);
+  const questionShownAt = useRef<number>(Date.now());
 
   useEffect(() => {
-    const shuffled = [...AUTHENTICITY_PAIRS].sort(() => Math.random() - 0.5);
-    setOrder(shuffled);
-    setGenuineOnLeft(Math.random() < 0.5);
+    nextPair();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const pair = order[index];
-
-  function handleAnswer(side: Side) {
-    if (phase !== 'question' || !pair) return;
-    const isCorrect = side === 'genuine';
-    setChosen(side);
-    setPhase('feedback');
-    setStats((s) => ({ correct: s.correct + (isCorrect ? 1 : 0), total: s.total + 1 }));
-    track('demo_answered', { correct: isCorrect });
+  function refreshStats() {
+    setPersistentStats(authenticityTotals(getProgress()));
   }
 
-  function next() {
-    if (!order.length) return;
-    if (index + 1 >= order.length) {
-      // Loop back, reshuffle
-      const reshuffled = [...AUTHENTICITY_PAIRS].sort(() => Math.random() - 0.5);
-      setOrder(reshuffled);
-      setIndex(0);
-    } else {
-      setIndex((i) => i + 1);
+  /**
+   * Pick the next pair using spaced-repetition priority:
+   *   1. Most overdue due-for-review pair
+   *   2. Pair never seen yet
+   *   3. Random fallback
+   * Always avoid the last 2 pairs seen this session (back-to-back).
+   */
+  function nextPair() {
+    const p = getProgress();
+    const seenIds = Object.keys(p.authenticity ?? {}).filter(
+      (id) => (p.authenticity[id]?.attempts ?? 0) > 0,
+    );
+    const recentSet = new Set(recentPairIds.current.slice(0, 2));
+    const due = authenticityDueRanked(p);
+
+    let pick: AuthenticityPair | undefined;
+
+    // 1. Due
+    for (const id of due) {
+      const candidate = AUTHENTICITY_PAIRS.find((x) => x.id === id);
+      if (candidate && !recentSet.has(candidate.id)) {
+        pick = candidate;
+        break;
+      }
     }
+    // 2. Unseen
+    if (!pick) {
+      const unseen = AUTHENTICITY_PAIRS.filter(
+        (x) => !seenIds.includes(x.id) && !recentSet.has(x.id),
+      );
+      if (unseen.length > 0) pick = unseen[Math.floor(Math.random() * unseen.length)];
+    }
+    // 3. Random
+    if (!pick) {
+      const pool = AUTHENTICITY_PAIRS.filter((x) => !recentSet.has(x.id));
+      pick = (pool.length > 0 ? pool : AUTHENTICITY_PAIRS)[
+        Math.floor(Math.random() * (pool.length > 0 ? pool.length : AUTHENTICITY_PAIRS.length))
+      ];
+    }
+
+    setPair(pick!);
     setGenuineOnLeft(Math.random() < 0.5);
     setChosen(null);
     setPhase('question');
     setImageError({ left: false, right: false });
+    questionShownAt.current = Date.now();
+    refreshStats();
+  }
+
+  function handleAnswer(side: Side) {
+    if (phase !== 'question' || !pair) return;
+    const isCorrect = side === 'genuine';
+    const timeMs = Date.now() - questionShownAt.current;
+    setChosen(side);
+    setPhase('feedback');
+    recordAuthenticityAnswer({ pairId: pair.id, isCorrect, timeMs });
+    recentPairIds.current = [pair.id, ...recentPairIds.current].slice(0, 5);
+    refreshStats();
+    track('demo_answered', { correct: isCorrect });
+  }
+
+  function next() {
+    nextPair();
   }
 
   if (!pair) {
@@ -65,7 +112,7 @@ export default function AuthenticityPage() {
   const rightSide: Side = genuineOnLeft ? 'performed' : 'genuine';
   const leftImage = leftSide === 'genuine' ? pair.genuineImagePath : pair.performedImagePath;
   const rightImage = rightSide === 'genuine' ? pair.genuineImagePath : pair.performedImagePath;
-  const accuracyPct = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
+  const accuracyPct = persistentStats.attempts > 0 ? Math.round(persistentStats.accuracy * 100) : 0;
 
   return (
     <main className="min-h-screen flex flex-col">
@@ -80,10 +127,12 @@ export default function AuthenticityPage() {
             <span className="eyebrow">Различение фальши</span>
             <span className="text-ink-4">·</span>
             <span className="text-ink-3 tnum">
-              № {String(index + 1).padStart(2, '0')} / {order.length}
+              {AUTHENTICITY_PAIRS.length} пар
             </span>
-            {stats.total > 0 && (
+            {persistentStats.attempts > 0 && (
               <>
+                <span className="text-ink-4">·</span>
+                <span className="text-ink-3 tnum">{persistentStats.attempts} ответов</span>
                 <span className="text-ink-4">·</span>
                 <span className="text-accent tnum font-medium">{accuracyPct}% точно</span>
               </>
