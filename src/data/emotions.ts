@@ -11,7 +11,9 @@
  */
 
 import analyses from './emotions_analysis.json';
+import tells from './inauthenticity_tells.json';
 const ANALYSES = analyses as Record<string, string>;
+const TELLS = tells as Record<string, string>;
 
 export type EmotionId =
   // tier 1 — basic
@@ -50,6 +52,8 @@ export interface EmotionMeta {
   analysis: string;
   /** Specific FACS Action Units / facial markers the user should have spotted. */
   markers: string[];
+  /** Authenticity tells — how to detect fake/performed vs genuine for this emotion. */
+  inauthenticityTells?: string;
 }
 
 export const EMOTIONS: Record<EmotionId, EmotionMeta> = {
@@ -234,10 +238,15 @@ export const TIER_TITLES: Record<Tier, string> = {
   3: 'Смешанные и подавленные',
 };
 
-// Merge analyses from JSON into the EMOTIONS map at module init.
+// Merge analyses + inauthenticity tells from JSON into the EMOTIONS map at module init.
 for (const [id, text] of Object.entries(ANALYSES)) {
   if (EMOTIONS[id as EmotionId]) {
     EMOTIONS[id as EmotionId].analysis = text;
+  }
+}
+for (const [id, text] of Object.entries(TELLS)) {
+  if (EMOTIONS[id as EmotionId]) {
+    EMOTIONS[id as EmotionId].inauthenticityTells = text;
   }
 }
 

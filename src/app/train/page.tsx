@@ -452,6 +452,16 @@ function FeedbackPanel({
           Развёрнутый разбор будет доступен после извлечения базы знаний из NotebookLM.
         </div>
       )}
+
+      {correct.inauthenticityTells && (
+        <div className="mt-8 p-4 sm:p-5 border border-accent/30 bg-accent-tint/40">
+          <div className="eyebrow text-accent-2 mb-3">Сигналы фальши · как отличить настоящее от наигранного</div>
+          <p
+            className="text-[0.9375rem] text-ink leading-relaxed prose-analysis"
+            dangerouslySetInnerHTML={{ __html: renderInline(correct.inauthenticityTells) }}
+          />
+        </div>
+      )}
     </div>
   );
 }
