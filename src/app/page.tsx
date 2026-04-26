@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { getProgress } from '@/lib/storage';
+import { DemoCard } from '@/components/DemoCard';
 
 const HERO_FACES = [
   { src: '/training/joy-1.jpg', label: 'Радость', code: 'AU6 + AU12' },
@@ -242,6 +243,19 @@ export default function HomePage() {
               note="Высший класс. Открывается после стабильного прохождения уровня II."
             />
           </div>
+        </div>
+      </section>
+
+      {/* DEMO CARD — try the loop right here */}
+      <section className="border-b border-rule">
+        <div className="max-w-[88rem] mx-auto px-4 sm:px-8 py-16 lg:py-24">
+          <div className="grid lg:grid-cols-12 gap-8 mb-12">
+            <div className="lg:col-span-2 eyebrow">Демо · без регистрации</div>
+            <h2 className="lg:col-span-10 display text-[clamp(2rem,5vw,4.5rem)] max-w-4xl">
+              Попробуйте <span className="display-italic">прямо сейчас.</span>
+            </h2>
+          </div>
+          <DemoCard />
         </div>
       </section>
 
