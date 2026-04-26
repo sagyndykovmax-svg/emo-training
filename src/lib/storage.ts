@@ -35,6 +35,19 @@ export interface AnswerRecord {
   timeMs?: number;
 }
 
+/**
+ * Per-pair stats for the /authenticity training mode (added v0.5).
+ * Same SR pattern as CategoryStats: nextReviewAt is in pair-attempt count,
+ * streak tracks consecutive correct picks of the genuine image.
+ */
+export interface AuthenticityPairStats {
+  attempts: number;
+  correct: number;
+  lastSeenAt: number;
+  nextReviewAt?: number;
+  streak?: number;
+}
+
 export interface Progress {
   byCategory: Partial<Record<EmotionId, CategoryStats>>;
   unlockedTier: 1 | 2 | 3;
@@ -46,6 +59,8 @@ export interface Progress {
   recentAnswers: AnswerRecord[];
   /** Accumulated active training time in ms. */
   totalTimeMs: number;
+  /** Per-pair stats for /authenticity mode. Key: pair.id. */
+  authenticity: Partial<Record<string, AuthenticityPairStats>>;
 }
 
 const RECENT_CAP = 200;
@@ -60,6 +75,7 @@ function emptyProgress(): Progress {
     tierUnlockedAt: { 1: now },
     recentAnswers: [],
     totalTimeMs: 0,
+    authenticity: {},
   };
 }
 
@@ -78,6 +94,7 @@ export function getProgress(): Progress {
       tierUnlockedAt: parsed.tierUnlockedAt ?? { 1: parsed.startedAt ?? base.startedAt },
       recentAnswers: parsed.recentAnswers ?? [],
       totalTimeMs: parsed.totalTimeMs ?? 0,
+      authenticity: parsed.authenticity ?? {},
     };
   } catch {
     return emptyProgress();
@@ -351,6 +368,80 @@ export function progressToNextTier(p: Progress) {
     attemptsNeeded,
     currentRate: t.accuracy,
   };
+}
+
+// ── Authenticity (paired-image deception detection mode) ────────────────────
+
+export function authenticityTotalAttempts(p: Progress): number {
+  let n = 0;
+  for (const s of Object.values(p.authenticity ?? {})) if (s) n += s.attempts;
+  return n;
+}
+
+/** Record an authenticity-pair answer. Updates per-pair stats and SR. */
+export function recordAuthenticityAnswer(opts: {
+  pairId: string;
+  isCorrect: boolean;
+  timeMs?: number;
+}): Progress {
+  const p = getProgress();
+  const stats = p.authenticity[opts.pairId] ?? {
+    attempts: 0,
+    correct: 0,
+    lastSeenAt: 0,
+    streak: 0,
+  };
+  stats.attempts += 1;
+  stats.lastSeenAt = Date.now();
+  if (opts.isCorrect) {
+    stats.correct += 1;
+    stats.streak = (stats.streak ?? 0) + 1;
+  } else {
+    stats.streak = 0;
+  }
+
+  // Same SR shape as emotion-level: wrong=4, correct streak 1=12, 2=24, 3=40, 4+=60.
+  const clock = authenticityTotalAttempts(p) + 1;
+  if (opts.isCorrect) {
+    const s = stats.streak ?? 1;
+    stats.nextReviewAt = clock + (s <= 1 ? 12 : s === 2 ? 24 : s === 3 ? 40 : 60);
+  } else {
+    stats.nextReviewAt = clock + 4;
+  }
+
+  p.authenticity[opts.pairId] = stats;
+
+  if (opts.timeMs && opts.timeMs > 0 && opts.timeMs < 5 * 60 * 1000) {
+    p.totalTimeMs += opts.timeMs;
+  }
+
+  saveProgress(p);
+  return p;
+}
+
+/** Pair ids ordered by how overdue they are (most overdue first). */
+export function authenticityDueRanked(p: Progress): string[] {
+  const clock = authenticityTotalAttempts(p);
+  const ranked: { id: string; overdueBy: number }[] = [];
+  for (const [id, stats] of Object.entries(p.authenticity ?? {})) {
+    if (!stats || stats.nextReviewAt === undefined) continue;
+    const overdueBy = clock - stats.nextReviewAt;
+    if (overdueBy >= 0) ranked.push({ id, overdueBy });
+  }
+  ranked.sort((a, b) => b.overdueBy - a.overdueBy);
+  return ranked.map((r) => r.id);
+}
+
+/** Aggregate authenticity totals — overall accuracy on the deception mode. */
+export function authenticityTotals(p: Progress) {
+  let attempts = 0;
+  let correct = 0;
+  for (const s of Object.values(p.authenticity ?? {})) {
+    if (!s) continue;
+    attempts += s.attempts;
+    correct += s.correct;
+  }
+  return { attempts, correct, accuracy: attempts ? correct / attempts : 0 };
 }
 
 export function formatDuration(ms: number): string {
