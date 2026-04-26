@@ -15,6 +15,14 @@ export interface CategoryStats {
   correct: number;
   partialCorrect: number;
   lastSeenAt: number;
+  /**
+   * Spaced-repetition scheduling fields (added v0.3).
+   * `nextReviewAt` is the global attempt count at which this emotion is due
+   * to reappear. `streak` counts consecutive correct full-credit answers and
+   * drives the spacing growth (longer gaps as the user demonstrates mastery).
+   */
+  nextReviewAt?: number;
+  streak?: number;
 }
 
 export interface AnswerRecord {
@@ -104,11 +112,26 @@ export function recordAnswer(input: RecordAnswerInput): {
     correct: 0,
     partialCorrect: 0,
     lastSeenAt: 0,
+    streak: 0,
   };
   stats.attempts += 1;
   stats.lastSeenAt = Date.now();
   if (input.outcome === 'correct') stats.correct += 1;
   if (input.outcome === 'partial') stats.partialCorrect += 1;
+
+  // ── Spaced-repetition scheduling ──────────────────────────────────────────
+  // The "clock" is the global attempt count (totals(p).attempts after this
+  // record is added below in updateOverall). We compute it inline to avoid
+  // a circular call.
+  const clock = totalAttemptsFor(p) + 1; // +1 because we just incremented stats.attempts
+  const prevStreak = stats.streak ?? 0;
+  if (input.outcome === 'correct') {
+    stats.streak = prevStreak + 1;
+  } else {
+    stats.streak = 0;
+  }
+  stats.nextReviewAt = clock + spacingFor(input.outcome, stats.streak);
+
   p.byCategory[input.correctEmotion] = stats;
 
   if (!p.seenCardIds.includes(input.cardId)) p.seenCardIds.push(input.cardId);
@@ -156,6 +179,60 @@ function computeOverallAccuracy(p: Progress) {
     correct += stats.correct + 0.5 * stats.partialCorrect;
   }
   return { attempts, rate: attempts ? correct / attempts : 0 };
+}
+
+function totalAttemptsFor(p: Progress): number {
+  let n = 0;
+  for (const s of Object.values(p.byCategory)) if (s) n += s.attempts;
+  return n;
+}
+
+/**
+ * Spacing schedule (in card-attempts, not time):
+ *   wrong       → review in 4 cards (immediate reinforcement)
+ *   partial     → review in 8 cards (medium gap, you got the cluster but not the precision)
+ *   correct,    streak 1 → 12
+ *   correct,    streak 2 → 24
+ *   correct,    streak 3 → 40
+ *   correct,    streak 4+ → 60 (essentially "long-term" — won't reappear unless tier rotates)
+ *
+ * Modeled after a simplified SM-2: each successful recall ~doubles the gap.
+ * Wrong answers reset the streak and bring the card back close.
+ */
+function spacingFor(outcome: Outcome, streakAfter: number): number {
+  if (outcome === 'wrong') return 4;
+  if (outcome === 'partial') return 8;
+  // correct
+  if (streakAfter <= 1) return 12;
+  if (streakAfter === 2) return 24;
+  if (streakAfter === 3) return 40;
+  return 60;
+}
+
+/** Returns the EmotionIds that are due for review at the current global clock. */
+export function dueForReview(p: Progress): EmotionId[] {
+  const clock = totalAttemptsFor(p);
+  const due: EmotionId[] = [];
+  for (const [id, stats] of Object.entries(p.byCategory)) {
+    if (!stats) continue;
+    if (stats.nextReviewAt !== undefined && stats.nextReviewAt <= clock) {
+      due.push(id as EmotionId);
+    }
+  }
+  return due;
+}
+
+/** Returns EmotionIds sorted by how overdue they are (most overdue first). */
+export function dueRanked(p: Progress): EmotionId[] {
+  const clock = totalAttemptsFor(p);
+  const ranked: { id: EmotionId; overdueBy: number }[] = [];
+  for (const [id, stats] of Object.entries(p.byCategory)) {
+    if (!stats || stats.nextReviewAt === undefined) continue;
+    const overdueBy = clock - stats.nextReviewAt;
+    if (overdueBy >= 0) ranked.push({ id: id as EmotionId, overdueBy });
+  }
+  ranked.sort((a, b) => b.overdueBy - a.overdueBy);
+  return ranked.map((r) => r.id);
 }
 
 export function resetProgress() {

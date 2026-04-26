@@ -9,6 +9,7 @@ import { pickNextCard, TRAINING_CARDS, type TrainingCard } from '@/data/training
 import { buildOptions, scoreAnswer, type Outcome } from '@/lib/scoring';
 import {
   currentStreak,
+  dueRanked,
   getProgress,
   progressToNextTier,
   recordAnswer,
@@ -86,7 +87,13 @@ export default function TrainPage() {
   function nextCard() {
     const p = getProgress();
     setTier(p.unlockedTier);
-    const c = pickNextCard({ unlockedTier: p.unlockedTier, seenCardIds: p.seenCardIds });
+    const recentCardIds = p.recentAnswers.slice(0, 5).map((a) => a.cardId);
+    const c = pickNextCard({
+      unlockedTier: p.unlockedTier,
+      seenCardIds: p.seenCardIds,
+      dueRanked: dueRanked(p),
+      recentCardIds,
+    });
     if (!c) return;
     setCard(c);
     setOptions(buildOptions(c.emotionId, 6));

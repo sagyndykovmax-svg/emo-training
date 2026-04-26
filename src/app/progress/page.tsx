@@ -6,6 +6,7 @@ import { EMOTIONS, TIER_TITLES, type EmotionId, type Tier } from '@/data/emotion
 import {
   bestStreak,
   currentStreak,
+  dueRanked,
   formatDuration,
   getProgress,
   progressToNextTier,
@@ -31,6 +32,7 @@ export default function ProgressPage() {
   const streak = currentStreak(progress);
   const best = bestStreak(progress);
   const nextTier = progressToNextTier(progress);
+  const due = dueRanked(progress);
 
   return (
     <main className="min-h-screen flex flex-col">
@@ -155,6 +157,34 @@ export default function ProgressPage() {
                       ))
                     )}
                   </div>
+                </div>
+              </section>
+            )}
+
+            {/* SPACED REPETITION — due for review */}
+            {due.length > 0 && (
+              <section className="mb-16">
+                <div className="eyebrow mb-4">Запланировано на повтор</div>
+                <p className="text-sm text-ink-3 mb-6 max-w-2xl leading-relaxed">
+                  Алгоритм интервальных повторений возвращает эти эмоции чаще — потому что вы
+                  на них ошибались, либо потому что давно не видели. Чем больше повторений с
+                  правильным ответом — тем реже эмоция будет появляться.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {due.slice(0, 8).map((id, i) => (
+                    <span
+                      key={id}
+                      className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm border ${
+                        i === 0 ? 'border-accent bg-accent-tint text-accent-2' : 'border-rule text-ink-2'
+                      }`}
+                    >
+                      {EMOTIONS[id].ru}
+                      {i === 0 && <span className="eyebrow text-accent">приоритет</span>}
+                    </span>
+                  ))}
+                  {due.length > 8 && (
+                    <span className="text-sm text-ink-3 self-center">+{due.length - 8} ещё</span>
+                  )}
                 </div>
               </section>
             )}
