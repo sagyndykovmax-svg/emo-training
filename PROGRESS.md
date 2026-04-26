@@ -1,5 +1,37 @@
 # Progress Log
 
+## v0.5 — 2026-04-26 (authenticity persistence + SR + dashboard)
+
+«Part C-lite» — глубина к существующему /authenticity без дублирования его как Tier IV в /train.
+
+### Контент
+- **+4 новые пары** (теперь 10 всего): disgust (AU9 vs AU10-only), smile (Дюшенновская vs социальная — explicit), shame (с покраснением vs выученная поза), suppressed-anger (реальные leakage vs имитация спокойствия)
+- 8 новых картинок через Nano Banana (~$0.32), все сжаты mozjpeg q82
+
+### Storage v3
+- Новый slice `authenticity: Partial<Record<string, AuthenticityPairStats>>` на Progress
+- `recordAuthenticityAnswer({pairId, isCorrect, timeMs})` — запись + SR scheduling
+- `authenticityTotals(p)`, `authenticityDueRanked(p)` — derivatives
+- SR такой же как в основном тренажёре: wrong=4, correct streak 1=12, 2=24, 3=40, 4+=60
+- Полностью backward-compat — старые данные получают `authenticity: {}` при чтении
+
+### `/authenticity` page rewrite
+- `nextPair()` использует SR: most-overdue → unseen → random
+- Каждый ответ persists в localStorage (больше не session-only)
+- Header: total ответов + накопительная accuracy
+- Пары которые путаешь — возвращаются через 4 ответа
+
+### `/progress` dashboard
+- Новая секция «Различение настоящего от фальши» (показывается если attempts > 0)
+- Большая accuracy цифра + total + ссылка обратно
+- Honest framing: «точность ниже общей по тренажёру естественна — подделать мимику легче, чем заметить»
+
+### Что НЕ сделали (от изначальной Part C)
+- Не интегрировали как Tier IV в /train — это создавало бы UX overlap с standalone /authenticity
+- Не добавили per-pair breakdown в /progress (только агрегатные стат) — можно добавить в следующей итерации если usage оправдает
+
+---
+
 ## v0.4 — 2026-04-26 (authenticity training)
 
 Адресует предложение профайлера: «добавить что-то для отличия искренних эмоций от фальши». Реализовано двумя слоями в одном PR.
@@ -128,7 +160,10 @@ Surprise pair — единственный фундаментально слаб
 
 ## High priority — следующая сессия
 
-### 0. Authenticity / fake-vs-genuine detection (новое — от профайлера)
+### ✅ ЗАКРЫТО — Authenticity feature (PR #7 + #9)
+Реализованы Part A (surface tells), Part B (новый /authenticity режим с 6 парами), Part C-lite (persistence + SR + 4 ещё пары + dashboard). Tier IV-интеграция в /train намеренно отвергнута из-за UX overlap. Доступно как `/authenticity` route + блок «Сигналы фальши» в основном тренажёре.
+
+### 0. (legacy) Authenticity / fake-vs-genuine detection — оригинальный план
 **Зачем:** физиогномика и FACS в первую очередь о том, **что под маской**. Уже частично закрыто Duchenne vs социальная улыбка и suppressed_anger, но не выделено как отдельный модуль.
 
 **Что есть в данных уже:**
