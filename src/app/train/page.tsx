@@ -18,6 +18,8 @@ import {
 
 type Phase = 'question' | 'feedback' | 'tier-unlocked';
 
+const PAUSE_THRESHOLD = 15;
+
 export default function TrainPage() {
   const [card, setCard] = useState<TrainingCard | null>(null);
   const [options, setOptions] = useState<EmotionId[]>([]);
@@ -31,6 +33,9 @@ export default function TrainPage() {
   const [recentErrors, setRecentErrors] = useState(0);
   const [nextTierInfo, setNextTierInfo] = useState<ReturnType<typeof progressToNextTier>>(null);
   const [unlockedTier, setUnlockedTier] = useState<2 | 3 | null>(null);
+  const [showPause, setShowPause] = useState(false);
+  const sessionCount = useRef(0);
+  const pauseDismissed = useRef(false);
   const questionShownAt = useRef<number>(Date.now());
 
   useEffect(() => {
@@ -121,6 +126,10 @@ export default function TrainPage() {
     setPhase('feedback');
     refreshProgressUI();
     if (justUnlocked) setUnlockedTier(justUnlocked);
+    sessionCount.current += 1;
+    if (sessionCount.current >= PAUSE_THRESHOLD && !pauseDismissed.current) {
+      setShowPause(true);
+    }
   }
 
   if (!card) {
@@ -299,6 +308,19 @@ export default function TrainPage() {
           <TierUnlockedModal tier={unlockedTier} onClose={() => setUnlockedTier(null)} />
         )}
       </AnimatePresence>
+
+      {/* PAUSE SUGGESTION */}
+      <AnimatePresence>
+        {showPause && (
+          <PauseModal
+            sessionCount={sessionCount.current}
+            onDismiss={() => {
+              pauseDismissed.current = true;
+              setShowPause(false);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </main>
   );
 }
@@ -383,6 +405,52 @@ function FeedbackPanel({
         </div>
       )}
     </div>
+  );
+}
+
+function PauseModal({
+  sessionCount,
+  onDismiss,
+}: {
+  sessionCount: number;
+  onDismiss: () => void;
+}) {
+  return (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 backdrop-blur-sm p-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onDismiss}
+    >
+      <motion.div
+        className="bg-bg border border-ink p-8 sm:p-10 max-w-lg w-full"
+        initial={{ scale: 0.95, y: 12 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.95, y: -12 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="eyebrow mb-4">Подсказка</div>
+        <h2 className="display text-3xl mb-4">
+          Вы прошли <span className="display-italic text-accent">{sessionCount}</span> карточек подряд.
+        </h2>
+        <p className="text-ink-2 leading-relaxed mb-6 text-[0.9375rem]">
+          После 15-20 карточек концентрация падает, точность распознавания снижается, а обучение становится менее эффективным. Это нормальный механизм когнитивной усталости — он есть у всех.
+        </p>
+        <p className="text-ink-2 leading-relaxed mb-8 text-[0.9375rem]">
+          Рассмотрите <strong>5-минутную паузу</strong> — встаньте, пройдитесь, посмотрите вдаль. Ваша точность на следующих карточках вырастет.
+        </p>
+        <div className="flex flex-col-reverse sm:flex-row gap-3">
+          <Link href="/progress" className="btn btn-ghost flex-1">
+            Посмотреть прогресс
+          </Link>
+          <button onClick={onDismiss} className="btn btn-primary flex-1">
+            Продолжить тренировку
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
