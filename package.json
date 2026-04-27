@@ -10,7 +10,9 @@
     "lint": "eslint",
     "generate:images": "tsx scripts/generate-images.ts",
     "compress:images": "tsx scripts/compress-images.ts",
-    "extract:knowledge": "tsx scripts/extract-knowledge.ts"
+    "extract:knowledge": "tsx scripts/extract-knowledge.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@google/genai": "^1.50.1",
@@ -24,14 +26,18 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^20.19.39",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.2",
+    "happy-dom": "^20.9.0",
+    "jsdom": "^29.1.0",
     "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "tsx": "^4.19.2",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.5"
   }
 }
