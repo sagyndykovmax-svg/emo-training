@@ -20,6 +20,7 @@ import {
 import { getMode, setMode, type TrainMode } from '@/lib/mode';
 import { track } from '@/lib/analytics';
 import { AuthBadge } from '@/components/AuthBadge';
+import { ShareButton } from '@/components/ShareButton';
 import type { JudgeResponse } from '@/app/api/judge/route';
 
 type Phase = 'question' | 'feedback' | 'tier-unlocked';
@@ -449,10 +450,19 @@ export default function TrainPage() {
                     }
                     judgeResult={mode === 'free' ? judgeResult : null}
                   />
-                  {/* Desktop: inline button. Mobile: sticky bottom (rendered separately below) */}
-                  <button onClick={nextCard} className="btn btn-primary mt-8 w-full md:w-auto hidden md:inline-flex">
-                    Следующая карточка <span aria-hidden>→</span>
-                  </button>
+                  {/* Desktop: inline button + share. Mobile: sticky bottom Next, share inline */}
+                  <div className="mt-8 flex flex-wrap items-center gap-3">
+                    <button onClick={nextCard} className="btn btn-primary w-full md:w-auto hidden md:inline-flex">
+                      Следующая карточка <span aria-hidden>→</span>
+                    </button>
+                    {chosen && (
+                      <ShareButton
+                        cardId={card.id}
+                        chosenEmotion={chosen}
+                        correctEmotion={correct.id}
+                      />
+                    )}
+                  </div>
                   <p className="hidden md:block text-xs text-ink-3 mt-3">
                     Можно нажать <kbd className="font-mono px-1 bg-bg-elev border border-rule rounded text-[0.7rem]">Enter</kbd> или <kbd className="font-mono px-1 bg-bg-elev border border-rule rounded text-[0.7rem]">→</kbd>
                   </p>

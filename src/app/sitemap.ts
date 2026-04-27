@@ -14,5 +14,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE}/faq`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${SITE}/facs`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${SITE}/physiognomy-vs-science`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
+    // /share/result is intentionally excluded — it's parametrized for sharing,
+    // not a standalone discoverable page; OG meta is generated per-link.
   ];
 }
