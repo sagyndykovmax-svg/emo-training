@@ -10,6 +10,7 @@ import { buildOptions, scoreAnswer, type Outcome } from '@/lib/scoring';
 import {
   confusionCount,
   currentStreak,
+  dueCardsRanked,
   dueRanked,
   getProgress,
   progressToNextTier,
@@ -124,9 +125,13 @@ export default function TrainPage() {
     const p = getProgress();
     setTier(p.unlockedTier);
     const recentCardIds = p.recentAnswers.slice(0, 5).map((a) => a.cardId);
+    const eligibleCardIds = TRAINING_CARDS
+      .filter((c) => c.difficulty <= p.unlockedTier)
+      .map((c) => c.id);
     const c = pickNextCard({
       unlockedTier: p.unlockedTier,
       seenCardIds: p.seenCardIds,
+      dueCardIds: dueCardsRanked(p, eligibleCardIds),
       dueRanked: dueRanked(p),
       recentCardIds,
     });
