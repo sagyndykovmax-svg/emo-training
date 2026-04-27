@@ -33,6 +33,8 @@ export interface AnswerRecord {
   at: number;
   /** ms taken to answer this card */
   timeMs?: number;
+  /** Mode used for this answer. Defaults to 'mcq' for legacy records. */
+  mode?: 'mcq' | 'free';
 }
 
 /**
@@ -112,6 +114,7 @@ export interface RecordAnswerInput {
   chosenEmotion: EmotionId;
   outcome: Outcome;
   timeMs?: number;
+  mode?: 'mcq' | 'free';
 }
 
 /**
@@ -161,6 +164,7 @@ export function recordAnswer(input: RecordAnswerInput): {
     outcome: input.outcome,
     at: Date.now(),
     timeMs: input.timeMs,
+    mode: input.mode ?? 'mcq',
   });
   if (p.recentAnswers.length > RECENT_CAP) p.recentAnswers = p.recentAnswers.slice(0, RECENT_CAP);
 
@@ -314,7 +318,7 @@ export interface Confusion {
   count: number;
 }
 
-/** Count how many times a specific (correct → chosen) confusion appeared. */
+/** Count how many times a specific (correct → chosen) confusion appeared in MCQ mode. */
 export function confusionCount(
   p: Progress,
   correctId: EmotionId,
@@ -322,6 +326,9 @@ export function confusionCount(
 ): number {
   let n = 0;
   for (const r of p.recentAnswers) {
+    // Free-text answers don't have a meaningful chosenEmotion (we set it equal
+    // to the correct one), so they shouldn't pollute the confusion matrix.
+    if ((r.mode ?? 'mcq') !== 'mcq') continue;
     if (r.correctEmotion === correctId && r.chosenEmotion === chosenId) n++;
   }
   return n;
