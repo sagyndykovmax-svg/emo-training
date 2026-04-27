@@ -18,6 +18,7 @@ import {
   type Progress,
 } from '@/lib/storage';
 import { track } from '@/lib/analytics';
+import { AuthBadge } from '@/components/AuthBadge';
 
 export default function ProgressPage() {
   const [progress, setProgress] = useState<Progress | null>(null);
@@ -45,9 +46,12 @@ export default function ProgressPage() {
             <span className="text-ink-3">←</span>
             <span className="display text-base sm:text-xl">Emotion Training</span>
           </Link>
-          <Link href="/train" className="eyebrow hover:text-ink transition">
-            К тренировке
-          </Link>
+          <div className="flex items-center gap-4">
+            <AuthBadge />
+            <Link href="/train" className="eyebrow hover:text-ink transition">
+              К тренировке
+            </Link>
+          </div>
         </div>
       </header>
 

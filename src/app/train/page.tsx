@@ -18,6 +18,7 @@ import {
 } from '@/lib/storage';
 import { getMode, setMode, type TrainMode } from '@/lib/mode';
 import { track } from '@/lib/analytics';
+import { AuthBadge } from '@/components/AuthBadge';
 import type { JudgeResponse } from '@/app/api/judge/route';
 
 type Phase = 'question' | 'feedback' | 'tier-unlocked';
@@ -285,6 +286,7 @@ export default function TrainPage() {
               <span className="text-ink-4">/</span>
               <span className={mode === 'free' ? 'text-accent font-medium' : 'text-ink-3'}>Текст</span>
             </button>
+            <AuthBadge />
             <Link href="/progress" className="eyebrow hover:text-ink transition">
               Отчёт
             </Link>

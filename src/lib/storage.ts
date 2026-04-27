@@ -106,6 +106,9 @@ export function getProgress(): Progress {
 export function saveProgress(p: Progress) {
   if (typeof window === 'undefined') return;
   localStorage.setItem(KEY, JSON.stringify(p));
+  // Fire-and-forget cloud sync (debounced; no-op when not signed in or unconfigured).
+  // Lazy-imported to avoid pulling Supabase into pages that don't use it.
+  void import('./cloud-sync').then((m) => m.scheduleUpload()).catch(() => {});
 }
 
 export interface RecordAnswerInput {
