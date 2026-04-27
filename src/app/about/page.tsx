@@ -83,36 +83,6 @@ export default function AboutPage() {
           </p>
         </Section>
 
-        {/* TECH */}
-        <Section eyebrow="Стек и принципы" title="Privacy-first, open source.">
-          <ul className="space-y-3 my-4">
-            <BulletItem>
-              <strong>Прогресс хранится в вашем браузере.</strong> Cloud-синхронизация — опционально, для прохождения с разных устройств. Никаких рекламных трекеров, cookies, маркетинговых воронок.
-            </BulletItem>
-            <BulletItem>
-              <strong>Открытый исходный код:</strong>{' '}
-              <a
-                href="https://github.com/sagyndykovmax-svg/emo-training"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-accent hover:underline"
-              >
-                github.com/sagyndykovmax-svg/emo-training
-              </a>
-              . MIT-friendly, можно форкать.
-            </BulletItem>
-            <BulletItem>
-              <strong>Стек:</strong> Next.js 16, React 19, TypeScript, Tailwind CSS, Supabase (опц.), Google Gemini (для AI-judge режима).
-            </BulletItem>
-            <BulletItem>
-              <strong>Лица — AI-generated</strong> через Google Nano Banana, с детальным контролем над FACS Action Units. Это снимает лицензионные ограничения academic-датасетов и даёт точный контроль над каждым маркером.
-            </BulletItem>
-            <BulletItem>
-              <strong>Аналитика:</strong> только Vercel Analytics (без cookies, без PII, не делится с третьими сторонами). Используется для понимания, какие функции работают, а какие нет.
-            </BulletItem>
-          </ul>
-        </Section>
-
         {/* ECOSYSTEM */}
         <Section eyebrow="Часть экосистемы" title="Инструменты самопознания.">
           <p>
