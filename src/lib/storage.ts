@@ -454,6 +454,66 @@ export function authenticityTotals(p: Progress) {
   return { attempts, correct, accuracy: attempts ? correct / attempts : 0 };
 }
 
+export interface AuthenticityPairBreakdown {
+  pairId: string;
+  attempts: number;
+  correct: number;
+  accuracy: number;
+  lastSeenAt: number;
+}
+
+/**
+ * Per-pair stats sorted by attempts descending. Pairs that have never been
+ * answered are NOT included (caller can compute "unseen" separately by
+ * comparing against AUTHENTICITY_PAIRS list).
+ */
+export function authenticityPerPair(p: Progress): AuthenticityPairBreakdown[] {
+  const out: AuthenticityPairBreakdown[] = [];
+  for (const [pairId, stats] of Object.entries(p.authenticity ?? {})) {
+    if (!stats || stats.attempts === 0) continue;
+    out.push({
+      pairId,
+      attempts: stats.attempts,
+      correct: stats.correct,
+      accuracy: stats.correct / stats.attempts,
+      lastSeenAt: stats.lastSeenAt,
+    });
+  }
+  out.sort((a, b) => b.attempts - a.attempts);
+  return out;
+}
+
+/**
+ * Full N×N confusion matrix from recentAnswers (MCQ-mode only).
+ * Returns a nested map: correctEmotion → chosenEmotion → count.
+ * Diagonal cells (correct answers) are present too — useful for normalizing
+ * the heatmap by total per-row attempts.
+ */
+export function confusionMatrix(p: Progress): Map<EmotionId, Map<EmotionId, number>> {
+  const m = new Map<EmotionId, Map<EmotionId, number>>();
+  for (const r of p.recentAnswers) {
+    if ((r.mode ?? 'mcq') !== 'mcq') continue;
+    let row = m.get(r.correctEmotion);
+    if (!row) {
+      row = new Map();
+      m.set(r.correctEmotion, row);
+    }
+    row.set(r.chosenEmotion, (row.get(r.chosenEmotion) ?? 0) + 1);
+  }
+  return m;
+}
+
+/** EmotionIds that appear at least once in recentAnswers (as correct or chosen). */
+export function emotionsTouched(p: Progress): EmotionId[] {
+  const set = new Set<EmotionId>();
+  for (const r of p.recentAnswers) {
+    if ((r.mode ?? 'mcq') !== 'mcq') continue;
+    set.add(r.correctEmotion);
+    set.add(r.chosenEmotion);
+  }
+  return Array.from(set);
+}
+
 export function formatDuration(ms: number): string {
   if (ms < 60_000) return `${Math.round(ms / 1000)} сек`;
   const mins = Math.floor(ms / 60_000);
