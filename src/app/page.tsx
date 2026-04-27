@@ -372,10 +372,52 @@ export default function HomePage() {
         </div>
       </section>
 
-      <footer>
-        <div className="max-w-[88rem] mx-auto px-4 sm:px-8 py-10 flex flex-wrap gap-4 justify-between text-sm text-ink-3">
-          <span>Emotion Training · v0.2 · 2026</span>
-          <span className="text-right">Часть экосистемы инструментов самопознания</span>
+      <footer className="border-t border-rule">
+        <div className="max-w-[88rem] mx-auto px-4 sm:px-8 py-12">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
+            <div>
+              <div className="eyebrow mb-3">Тренажёр</div>
+              <ul className="space-y-2 text-sm">
+                <li><Link href="/train" className="text-ink-2 hover:text-ink transition">Основная тренировка</Link></li>
+                <li><Link href="/authenticity" className="text-ink-2 hover:text-ink transition">Различение фальши</Link></li>
+                <li><Link href="/progress" className="text-ink-2 hover:text-ink transition">Мой отчёт</Link></li>
+              </ul>
+            </div>
+            <div>
+              <div className="eyebrow mb-3">Знания</div>
+              <ul className="space-y-2 text-sm">
+                <li><Link href="/facs" className="text-ink-2 hover:text-ink transition">Глоссарий FACS</Link></li>
+                <li><Link href="/physiognomy-vs-science" className="text-ink-2 hover:text-ink transition">Физиогномика и наука</Link></li>
+              </ul>
+            </div>
+            <div>
+              <div className="eyebrow mb-3">О проекте</div>
+              <ul className="space-y-2 text-sm">
+                <li><Link href="/about" className="text-ink-2 hover:text-ink transition">О проекте</Link></li>
+                <li><Link href="/faq" className="text-ink-2 hover:text-ink transition">Вопросы</Link></li>
+                <li><Link href="/account" className="text-ink-2 hover:text-ink transition">Аккаунт</Link></li>
+              </ul>
+            </div>
+            <div>
+              <div className="eyebrow mb-3">Открытый код</div>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <a
+                    href="https://github.com/sagyndykovmax-svg/emo-training"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-ink-2 hover:text-ink transition"
+                  >
+                    GitHub
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div className="border-t border-rule pt-6 flex flex-wrap gap-4 justify-between text-xs text-ink-3">
+            <span>Emotion Training · 2026</span>
+            <span className="text-right">Часть экосистемы инструментов самопознания</span>
+          </div>
         </div>
       </footer>
     </main>
