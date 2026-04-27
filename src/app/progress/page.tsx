@@ -4,10 +4,13 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { EMOTIONS, TIER_TITLES, type EmotionId, type Tier } from '@/data/emotions';
 import {
+  authenticityPerPair,
   authenticityTotals,
   bestStreak,
+  confusionMatrix,
   currentStreak,
   dueRanked,
+  emotionsTouched,
   formatDuration,
   getProgress,
   progressToNextTier,
@@ -17,6 +20,7 @@ import {
   totals,
   type Progress,
 } from '@/lib/storage';
+import { AUTHENTICITY_PAIRS } from '@/data/authenticity_pairs';
 import { track } from '@/lib/analytics';
 import { AuthBadge } from '@/components/AuthBadge';
 
@@ -37,6 +41,9 @@ export default function ProgressPage() {
   const nextTier = progressToNextTier(progress);
   const due = dueRanked(progress);
   const authTotals = authenticityTotals(progress);
+  const authPairs = authenticityPerPair(progress);
+  const cMatrix = confusionMatrix(progress);
+  const touchedEmotions = emotionsTouched(progress);
 
   return (
     <main className="min-h-screen flex flex-col">
@@ -168,31 +175,82 @@ export default function ProgressPage() {
               </section>
             )}
 
-            {/* AUTHENTICITY — deception detection accuracy */}
+            {/* AUTHENTICITY — deception detection accuracy + per-pair breakdown */}
             {authTotals.attempts > 0 && (
-              <section className="mb-16 border-l-2 border-accent pl-5 sm:pl-8 py-2">
-                <div className="eyebrow mb-3">Различение настоящего от фальши</div>
-                <div className="flex flex-wrap items-baseline gap-4 sm:gap-8 mb-3">
-                  <div>
-                    <div className="display text-4xl sm:text-5xl tnum">
-                      {Math.round(authTotals.accuracy * 100)}%
+              <section className="mb-16">
+                <div className="border-l-2 border-accent pl-5 sm:pl-8 py-2 mb-8">
+                  <div className="eyebrow mb-3">Различение настоящего от фальши</div>
+                  <div className="flex flex-wrap items-baseline gap-4 sm:gap-8 mb-3">
+                    <div>
+                      <div className="display text-4xl sm:text-5xl tnum">
+                        {Math.round(authTotals.accuracy * 100)}%
+                      </div>
+                      <div className="eyebrow mt-1">Точность детекции</div>
                     </div>
-                    <div className="eyebrow mt-1">Точность детекции</div>
-                  </div>
-                  <div>
-                    <div className="display text-2xl tnum text-ink-2">
-                      {authTotals.attempts}
+                    <div>
+                      <div className="display text-2xl tnum text-ink-2">
+                        {authTotals.attempts}
+                      </div>
+                      <div className="eyebrow mt-1">Пар пройдено</div>
                     </div>
-                    <div className="eyebrow mt-1">Пар пройдено</div>
                   </div>
+                  <p className="text-sm text-ink-3 leading-relaxed mt-4 max-w-2xl">
+                    Самый прикладной навык физиогномики. Точность ниже общей по тренажёру —
+                    естественно: подделать мимику легче, чем заметить подделку.{' '}
+                    <Link href="/authenticity" className="text-accent hover:underline">
+                      Продолжить тренировку различения →
+                    </Link>
+                  </p>
                 </div>
-                <p className="text-sm text-ink-3 leading-relaxed mt-4 max-w-2xl">
-                  Это самый прикладной навык физиогномики. Точность ниже общей по тренажёру —
-                  естественно: подделать мимику легче, чем заметить подделку.{' '}
-                  <Link href="/authenticity" className="text-accent hover:underline">
-                    Продолжить тренировку различения →
-                  </Link>
-                </p>
+
+                <div className="eyebrow mb-3">По парам</div>
+                <div className="space-y-1">
+                  {authPairs.map((row) => {
+                    const pair = AUTHENTICITY_PAIRS.find((p) => p.id === row.pairId);
+                    if (!pair) return null;
+                    return (
+                      <div
+                        key={row.pairId}
+                        className="flex items-center gap-3 sm:gap-4 py-2.5 border-b border-rule last:border-0 text-sm"
+                      >
+                        <div className="flex-1 truncate">
+                          <span className="text-ink">{pair.emotion}</span>
+                          <span className="text-ink-4 text-xs ml-2 hidden sm:inline">
+                            {pair.tell}
+                          </span>
+                        </div>
+                        <div className="text-xs text-ink-3 w-16 sm:w-20 text-right tnum shrink-0">
+                          {row.attempts} {row.attempts === 1 ? 'попыт.' : 'попыт.'}
+                        </div>
+                        <div className="hidden sm:block w-32 h-1 bg-bg-elev overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-500 ${
+                              row.accuracy >= 0.7
+                                ? 'bg-success'
+                                : row.accuracy >= 0.5
+                                ? 'bg-accent'
+                                : 'bg-error'
+                            }`}
+                            style={{ width: `${row.accuracy * 100}%` }}
+                          />
+                        </div>
+                        <div className="w-12 text-xs tnum text-right shrink-0 font-medium">
+                          {Math.round(row.accuracy * 100)}%
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {/* Show unseen pairs as a hint at the bottom */}
+                  {AUTHENTICITY_PAIRS.length - authPairs.length > 0 && (
+                    <p className="text-xs text-ink-3 italic pt-3">
+                      Ещё {AUTHENTICITY_PAIRS.length - authPairs.length}{' '}
+                      {AUTHENTICITY_PAIRS.length - authPairs.length === 1
+                        ? 'пара не пройдена'
+                        : 'пар не пройдено'}
+                      .
+                    </p>
+                  )}
+                </div>
               </section>
             )}
 
@@ -224,15 +282,24 @@ export default function ProgressPage() {
               </section>
             )}
 
-            {/* CONFUSIONS */}
+            {/* CONFUSIONS — heatmap (desktop) + top list (mobile) */}
             {confusions.length > 0 && (
               <section className="mb-16">
                 <div className="eyebrow mb-4">Что с чем путаете</div>
                 <p className="text-sm text-ink-3 mb-6 max-w-2xl leading-relaxed">
-                  Самые частые ошибки. Если в одной паре эмоции путаются регулярно — это сигнал
-                  пересмотреть их различительные мимические маркеры.
+                  Если эмоции путаются регулярно — это сигнал пересмотреть их различительные мимические маркеры.
                 </p>
-                <div className="space-y-2">
+
+                {/* Desktop: full heatmap matrix */}
+                <div className="hidden md:block">
+                  <ConfusionHeatmap
+                    matrix={cMatrix}
+                    emotions={touchedEmotions.sort((a, b) => EMOTIONS[a].tier - EMOTIONS[b].tier || EMOTIONS[a].ru.localeCompare(EMOTIONS[b].ru))}
+                  />
+                </div>
+
+                {/* Mobile: top-N list */}
+                <div className="md:hidden space-y-2">
                   {confusions.map((c) => (
                     <ConfusionRow
                       key={`${c.correctEmotion}-${c.chosenEmotion}`}
@@ -357,6 +424,127 @@ function EmotionRow({
       </span>
     </div>
   );
+}
+
+function ConfusionHeatmap({
+  matrix,
+  emotions,
+}: {
+  matrix: Map<EmotionId, Map<EmotionId, number>>;
+  emotions: EmotionId[];
+}) {
+  if (emotions.length === 0) return null;
+
+  // Find the max non-diagonal cell for color normalization.
+  let maxOff = 0;
+  for (const correctId of emotions) {
+    const row = matrix.get(correctId);
+    if (!row) continue;
+    for (const chosenId of emotions) {
+      if (chosenId === correctId) continue;
+      const v = row.get(chosenId) ?? 0;
+      if (v > maxOff) maxOff = v;
+    }
+  }
+
+  function cellStyle(correctId: EmotionId, chosenId: EmotionId) {
+    const v = matrix.get(correctId)?.get(chosenId) ?? 0;
+    if (v === 0) return { background: 'transparent', color: 'var(--ink-4)' };
+    if (correctId === chosenId) {
+      // Diagonal: green-tinted (correct answers)
+      const opacity = Math.min(0.85, v / 8);
+      return {
+        background: `rgba(47, 90, 58, ${opacity.toFixed(2)})`,
+        color: opacity > 0.4 ? 'var(--bg)' : 'var(--ink)',
+      };
+    }
+    // Off-diagonal: rust-red, intensity proportional to count vs max
+    const ratio = maxOff > 0 ? v / maxOff : 0;
+    const opacity = Math.min(0.85, 0.15 + ratio * 0.7);
+    return {
+      background: `rgba(196, 58, 46, ${opacity.toFixed(2)})`,
+      color: opacity > 0.4 ? 'var(--bg)' : 'var(--ink)',
+    };
+  }
+
+  return (
+    <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0 pb-2">
+      <table
+        className="border-collapse text-xs tnum"
+        style={{ fontFamily: 'var(--font-mono)' }}
+      >
+        <thead>
+          <tr>
+            <th className="sticky left-0 bg-bg p-2 text-left text-ink-3 font-normal eyebrow border-b border-rule">
+              На лице → выбрано
+            </th>
+            {emotions.map((e) => (
+              <th
+                key={e}
+                className="p-2 border-b border-rule"
+                style={{ writingMode: 'vertical-rl', height: 120 }}
+              >
+                <span className="text-ink-3">{shortLabel(EMOTIONS[e].ru)}</span>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {emotions.map((correctId) => (
+            <tr key={correctId}>
+              <th className="sticky left-0 bg-bg p-2 text-left font-normal text-ink whitespace-nowrap pr-3 border-b border-rule text-[0.75rem]">
+                {EMOTIONS[correctId].ru}
+              </th>
+              {emotions.map((chosenId) => {
+                const v = matrix.get(correctId)?.get(chosenId) ?? 0;
+                const isDiag = correctId === chosenId;
+                return (
+                  <td
+                    key={chosenId}
+                    className="text-center align-middle border border-rule"
+                    style={{
+                      ...cellStyle(correctId, chosenId),
+                      width: 36,
+                      height: 36,
+                    }}
+                    title={
+                      v > 0
+                        ? `На «${EMOTIONS[correctId].ru}» вы ${
+                            isDiag ? 'правильно ответили' : `выбрали «${EMOTIONS[chosenId].ru}»`
+                          } ${v} раз${v < 5 && v !== 1 ? 'а' : v === 1 ? '' : ''}`
+                        : undefined
+                    }
+                  >
+                    {v > 0 ? v : ''}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="text-xs text-ink-3 mt-3">
+        Строки — какая эмоция была на самом деле; столбцы — что вы выбрали. Диагональ зелёная (правильные ответы), не-диагональ красная (путаницы). Наведите курсор на ячейку для деталей.
+      </p>
+    </div>
+  );
+}
+
+function shortLabel(ru: string): string {
+  // Shorten long emotion names for vertical-text column headers.
+  const map: Record<string, string> = {
+    'Дюшенновская (искренняя) улыбка': 'Дюшенн',
+    'Социальная (вежливая) улыбка': 'Социальн.',
+    'Страх (отличие от удивления)': 'Страх*',
+    'Удивление (отличие от страха)': 'Удивл.*',
+    'Контролируемый/подавленный гнев': 'Контр.гнев',
+    'Грусть (отличие от усталости)': 'Грусть*',
+    'Усталость / разочарование (отличие от грусти)': 'Усталость',
+    'Подавленный гнев под маской нейтральности': 'Подавл.гнев',
+    'Ностальгия / горько-сладкое': 'Ностальгия',
+    'Тревога (страх + грусть)': 'Тревога',
+  };
+  return map[ru] ?? ru;
 }
 
 function ConfusionRow({
