@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    name: Build & lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci --prefer-offline --no-audit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        env:
+          # Stub Supabase env vars so build doesn't fail in CI; runtime
+          # behavior is tested separately, this is just type/build check.
+          NEXT_PUBLIC_SUPABASE_URL: https://stub.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: stub
+          GOOGLE_GENAI_API_KEY: stub
+        run: npm run build
