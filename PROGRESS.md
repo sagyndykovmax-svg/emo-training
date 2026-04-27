@@ -1,5 +1,43 @@
 # Progress Log
 
+## v0.7 — 2026-04-27 (low-priority + tech-debt sweep)
+
+Закрывает почти весь low-priority блок и tech-debt из roadmap. 4 PR в этой сессии (плюс этот docs).
+
+### PR #18 — Error boundary + GitHub CI + Google OAuth
+- `app/error.tsx` — top-level App Router error boundary с calm RU-fallback, reset кнопкой и error.digest для диагностики
+- `app/not-found.tsx` — proper 404 в визуале сайта вместо дефолта Next.js
+- `.github/workflows/ci.yml` — npm ci + lint + build на каждый PR/push в main, stub env vars, 10-min timeout
+- Google OAuth кнопка в `/account` (поверх email/password из PR #13). useAuth теперь триггерит reconcileOnSignIn на SIGNED_IN event — после OAuth-callback localStorage и cloud merge'атся автоматически
+
+### PR #19 — Unit tests (vitest, 58 tests, ~1 sec)
+- Setup: vitest + happy-dom + explicit MemoryStorage polyfill (jsdom/happy-dom integration в vitest 4.x ненадёжна для Storage). Mock cloud-sync.
+- Coverage:
+  - `scoring.ts` (8 tests) — scoreAnswer matrix, buildOptions invariants
+  - `storage.ts` (40 tests) — recordAnswer, SM-2 механика, tier unlock, streaks, confusion analytics, authenticity, formatDuration, totals
+  - `training_set.ts` (10 tests) — pickNextCard priority orchestration
+- npm scripts: `test`, `test:watch`
+- CI workflow обновлён в этом PR — добавлен `npm test` шаг
+
+### PR #20 — Social sharing с динамическим OG-image
+- `/api/og/result` (Edge runtime) — Next.js ImageResponse / Satori, генерит 1200×630 PNG из `{card, chosen, correct}` URL params. Левая половина — портрет, правая — outcome badge + английская транслитерация эмоции + branding
+- `/share/result?card=X&chosen=Y&correct=Z` — server component с generateMetadata: динамические og:image / twitter:image указывают на /api/og/result. Невалидные params → fallback с CTA
+- `ShareButton` в /train FeedbackPanel: navigator.share() на mobile, copy-to-clipboard на desktop, window.prompt() как last-resort
+- Английские лейблы в OG потому что Satori bundled fonts только Latin — Cyrillic потребует подгрузки font binary (отложено)
+
+### Build state
+- 14 routes (с v0.6 +2: /share/result, /api/og/result)
+- 11 static + 3 dynamic (/api/judge, /api/og/result, /share/result)
+- 58 unit tests, ~1 sec прогон
+
+### CI now runs
+- `npm ci`
+- `npm run lint`
+- `npm test`
+- `npm run build`
+
+---
+
 ## v0.6 — 2026-04-27 (high + medium priority sweep)
 
 Большой батч из 5 функциональных PR, закрывающий весь high-priority блок (кроме отложенного real-face гибрида) и весь medium-priority блок из roadmap'а.
@@ -214,7 +252,7 @@ Surprise pair — единственный фундаментально слаб
 
 # Roadmap
 
-Чистый список того, что осталось — после v0.6 (PR #1-#16 смержены).
+После v0.7 (PR #1-#21 смержены) почти весь roadmap закрыт. Осталось 3 крупных пункта, требующих внешних ресурсов или предварительных решений.
 
 ## ✅ Закрыто
 
@@ -229,64 +267,60 @@ Surprise pair — единственный фундаментально слаб
 - [x] `/authenticity` standalone режим с 6 парами (PR #7 Part B)
 - [x] +4 пары + persistence + SR + dashboard tile (PR #9)
 
-### High + Medium priority sweep (v0.6)
+### High + Medium priority (v0.6)
 - [x] **#3** AI-judge свободного ответа через Gemini 2.5 Flash (PR #12)
-- [x] **#2** Google auth + Supabase cloud sync (PR #13) — email/password только, OAuth отложен
+- [x] **#2** Google auth + Supabase cloud sync — email/password (PR #13)
 - [x] **#4** Per-pair authenticity breakdown в `/progress` (PR #14)
 - [x] **#5** Confusion matrix heatmap (PR #14)
 - [x] **#6** True per-card SM-2 (PR #15)
 - [x] **#7** Knowledge expansion — `/facs` глоссарий + cultural caveats (PR #16)
 - [x] **#8** SEO content pages — `/about`, `/faq`, `/physiognomy-vs-science` (PR #16)
 
-## 🔴 High priority (отложено)
+### Low + Tech-debt sweep (v0.7)
+- [x] **#10** Error boundary + 404 страница (PR #18)
+- [x] **#15** GitHub CI workflow с lint + test + build (PR #18 + #21)
+- [x] **Google OAuth** поверх email/password (PR #18) — нужен Google Cloud Console setup от пользователя
+- [x] **#14** Unit tests — 58 tests via vitest (PR #19)
+- [x] **#13** Социальный sharing с динамическим OG image (PR #20)
 
-### 1. Real-face гибрид (3-4 ч)
-Curated Unsplash портретов (~20-30 шт) + опциональный режим `/real` или toggle в `/train`. Адресует главное возражение ревью: «AI-лица могут не переноситься в реальный мир». Сохраняем AI для пар (same-face consistency), добавляем real для базовых эмоций.
+## ⏳ Осталось
 
-**Задача требует контентной курации (нельзя scriptовать на 100%) — поэтому отложена. Когда возьмёмся — нужно time для подбора фотографий с подтверждённой эмоциональной семантикой.**
+### #1 Real-face гибрид (3-4 ч + content curation)
+Curated Unsplash портретов (~20-30 шт) + опциональный режим `/real` или toggle в `/train`. Адресует главное возражение ревью: «AI-лица могут не переноситься в реальный мир».
 
-### Google OAuth (поверх PR #13 email/password)
-Сейчас auth работает через email/password. Google OAuth — дополнительно ~10 мин setup в Google Cloud Console + добавление callback URL. Низко-висящий фрукт.
+**Блокер:** ручная курация фотографий с подтверждённой эмоциональной семантикой. Не scriptуется. Нужна сессия с временем на подбор.
 
-## 🟢 Low priority / nice-to-have
+### #11 Mobile app via Capacitor (4-6 ч + device testing)
+По примеру `face`. Требует Android Studio для build/test, iOS device для тестирования. API routes (/api/judge, /api/og/result) не работают в static export — нужно завязать на production URL.
 
-### 9. Custom domain (30 мин)
+**Блокер:** доступ к Android Studio / iOS device для верификации, не делается полностью удалённо.
 
-### 9. Custom domain (30 мин)
-emo-training.vercel.app → что-то типа emoread.io или поддомен.
+### #12 Видео-карточки (8+ ч + content pipeline)
+Короткие петли (1-2 сек) с микро-выражениями. FACS правильно работает с видео, не статикой. Большая фича.
 
-### 10. Error boundary (30 мин)
-React Error Boundary вокруг `<TrainPage>` и `<AuthenticityPage>` с fallback. Сейчас один компонент-краш роняет страницу.
+**Блокер:** нужен новый источник видео-материала (real video footage с лицензиями). Контентный, не технический вопрос.
 
-### 11. Mobile app via Capacitor (4-6 ч)
-По примеру `face`. Для iOS App Store потребуются disclaimers и review.
-
-### 12. Видео-карточки (8+ ч, большая фича)
-Короткие петли с микро-выражениями (1-2 сек). Качественное обучение с FACS требует динамики, не статики. Нужен новый источник материала (real video footage с лицензиями).
-
-### 13. Социальная функциональность (2 ч)
-Делиться результатом одного теста (одна карточка + ваш ответ + правильный). Leaderboard сознательно НЕ делать — несовместимо с серьёзностью продукта.
+### #9 Custom domain (~30 мин user-side)
+Купить домен → настроить DNS → добавить в Vercel project settings → автоматический SSL. Кода менять не нужно (только обновить `metadataBase` в layout.tsx с `emo-training.vercel.app` на новый домен).
 
 ## 🔧 Tech debt / hygiene
 
-- [ ] **Unit tests** (2-3 ч) — минимум на `scoreAnswer`, `pickNextCard`, `recordAnswer`, `recordAuthenticityAnswer`. Сейчас тестов нет вообще
-- [ ] **GitHub CI** (30 мин) — workflow с `npm run build` + `npm run lint` на каждый PR. Защищает main от broken коммитов навсегда
 - [ ] `scripts/image-prompts.ts` имеет 4 батча с разной структурой prompt'ов — унифицировать в `{ subjectPool, anatomicalCore, suffix }`
 - [ ] `extract-knowledge.ts` имеет dead code для парсинга pair-секций — удалить или дописать для будущей рекалибровки знаний
 
 ## ⚠️ Известные ограничения (документация, не TODO)
 
-1. **Картинки = AI-generated.** Лучше academic datasets по контролю/лицензиям/разнообразию, но перенос на real-world recognition требует дополнительной верификации. Часть закрывается через #1 в High priority.
+1. **Картинки = AI-generated.** Лучше academic datasets по контролю/лицензиям/разнообразию, но перенос на real-world recognition требует дополнительной верификации. Часть закрывается через #1 (real-face hybrid).
 2. **Static, не video.** FACS правильно работает с видео. Известное ограничение всех photo-based тренажёров. Адресуется через #12 (видео-карточки).
-3. **Cultural bias.** Большинство prompts — western faces. Научно физиогномические маркеры работают НЕ одинаково кросс-культурно. Каверы должны попасть в #7 (расширение базы знаний).
-4. **Self-paced без accountability.** Без аккаунтов нельзя видеть retention/drop-off/dau-mau на уровне пользователя. Адресуется через #2 (Google auth) + Vercel Analytics дашборд.
+3. **Cultural bias.** Большинство prompts — western faces. Научно физиогномические маркеры работают НЕ одинаково кросс-культурно.
+4. **Self-paced без accountability.** Без аккаунтов отчётность ограничена; cloud-sync через Supabase (PR #13) частично решает.
 
 ---
 
 ## Рекомендуемый порядок взятия
 
-**Самый высокий ROI:** #1 (real-face гибрид) — закрывает главное возражение ревью.
-**Самое инфраструктурно важное:** #2 (Google auth) — без него весь прогресс теряется.
-**Самый дешёвый win:** GitHub CI (30 мин) — защищает main от broken коммитов навсегда.
-
-Остальное по запросу или по реальным сигналам из Vercel Analytics после накопления usage.
+После v0.7 продукт в зрелом состоянии. Дальнейшие шаги — по сигналам:
+- **Накопить ~1-2 недели реального usage** в Vercel Analytics → понять, какие функции работают, какие нет → data-driven приоритеты
+- **#1 Real-face hybrid** — самый высокий потенциальный ROI, требует контентной курации
+- **#11 Capacitor** — если усиливается сигнал что mobile UX узок и нужно нативное приложение
+- **#12 Video cards** — амбициозный шаг к научному переносу навыка
