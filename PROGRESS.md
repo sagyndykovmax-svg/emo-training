@@ -1,5 +1,61 @@
 # Progress Log
 
+## v0.6 — 2026-04-27 (high + medium priority sweep)
+
+Большой батч из 5 функциональных PR, закрывающий весь high-priority блок (кроме отложенного real-face гибрида) и весь medium-priority блок из roadmap'а.
+
+### PR #12 — AI-judge режим
+- Свободный текстовый ответ вместо MCQ — пользователь описывает эмоцию словами, Gemini 2.5 Flash оценивает с partial credit
+- Возвращает: score 0-100, verdict, foundMarkers, missedMarkers, guidance
+- POST `/api/judge` — первый runtime AI-зависимый route. Намеренное нарушение принципа "AI только в build-time" (документировано как осознанное исключение)
+- Toggle "MCQ / Текст" в header `/train`, persist в localStorage
+- Cmd/Ctrl+Enter submits из textarea
+- Storage: AnswerRecord гейт `mode: 'mcq' | 'free'` чтобы free-answers не пачкали confusion matrix
+- 800-char hard cap на user text, score>=80 → correct, 50-79 → partial
+
+### PR #13 — Cloud sync через Supabase
+- Опциональная cross-device синхронизация. Без env vars — graceful degradation в localStorage-only режим (без auth UI)
+- localStorage остаётся primary store, cloud — debounced backup (5 сек)
+- На sign-in: `reconcileOnSignIn()` сравнивает по total attempts, last-write-wins
+- Email/password auth (без Google OAuth для MVP — отложено)
+- `/account` page (sign in/up/dashboard), `AuthBadge` в header всех страниц
+- SQL миграция: 1 таблица `progress` + RLS policies + auto-bump trigger
+- Schema: `byCategory`, `authenticity`, `byCard`, `recentAnswers` — всё в едином jsonb
+
+### PR #14 — Per-pair breakdown + Confusion heatmap
+- В `/progress` добавлен per-pair authenticity breakdown с tells, color-coded accuracy bars, счётчиком unseen pairs
+- Top-5 confusion список заменён на N×N heatmap (десктоп only, mobile fallback к списку)
+- Heatmap: диагональ green-tinted (правильные), off-diagonal rust-red (путаницы), opacity ∝ count
+- Vertical-text column headers, hover tooltip с деталями
+- Новые helpers: `authenticityPerPair`, `confusionMatrix`, `emotionsTouched`
+
+### PR #15 — Per-card SM-2 spaced repetition
+- Заменили per-emotion эвристику на классический SM-2 на уровне карточки
+- Каждая карточка имеет свой `eFactor` (default 2.5, floor 1.3) и `interval`
+- Quality mapping: wrong=0, partial=2, correct=4. q<3 сбрасывает в 1; q≥3 растит interval
+- pickNextCard приоритет: due card → unseen → due emotion (fallback) → random
+- Storage backward-compat: старые данные получают `byCard: {}` при чтении
+
+### PR #16 — 4 контентные страницы
+- `/facs` — глоссарий 16 Action Units с описанием мышц + кросс-культурная оговорка
+- `/about` — позиционирование, источники, стек, дисклеймер
+- `/faq` — 10 типовых вопросов
+- `/physiognomy-vs-science` — где наука (FACS), где не наука (Лафатер, Ломброзо), красные линии
+- Footer лендинга переписан с 4 колонками ссылок
+- Sitemap расширен 4 новыми URL
+
+### Build state
+- 12 routes (было 8 в v0.5)
+- 1 dynamic route (`/api/judge`), 11 static
+- Bundle size в норме, по prerender stats всё OK
+- Production: https://emo-training.vercel.app
+
+### Pending user actions
+- Включить Vercel Analytics на dashboard (один клик)
+- Опционально: добавить `NEXT_PUBLIC_SUPABASE_*` env vars в Preview scope (сейчас только Production)
+
+---
+
 ## v0.5 — 2026-04-26 (authenticity persistence + SR + dashboard)
 
 «Part C-lite» — глубина к существующему /authenticity без дублирования его как Tier IV в /train.
@@ -158,53 +214,43 @@ Surprise pair — единственный фундаментально слаб
 
 # Roadmap
 
-Чистый список того, что осталось — после v0.5 (PR #1-#10 смержены: PR-флоу, spaced repetition, demo+pause, analytics, contrast feedback, authenticity A+B+C-lite, docs).
+Чистый список того, что осталось — после v0.6 (PR #1-#16 смержены).
 
-## ✅ Закрыто в этой серии PR
+## ✅ Закрыто
 
-- [x] PR-based git workflow как стандарт (PR #1)
-- [x] SM-2-lite spaced repetition в /train (PR #2)
+### Базовая инфраструктура (v0.1–v0.5)
+- [x] PR-based git workflow (PR #1)
+- [x] SM-2-lite spaced repetition (PR #2)
 - [x] Demo карточка на лендинге (PR #3)
 - [x] Pause modal после 15 карточек (PR #3)
-- [x] Vercel Analytics + типизированный wrapper (PR #4)
-- [x] Контраст-блок ответов + personal-pattern feedback (PR #5)
+- [x] Vercel Analytics + typed wrapper (PR #4)
+- [x] Контраст-блок + personal-pattern (PR #5)
 - [x] «Сигналы фальши» в FeedbackPanel (PR #7 Part A)
-- [x] /authenticity standalone режим с 6 парами (PR #7 Part B)
+- [x] `/authenticity` standalone режим с 6 парами (PR #7 Part B)
 - [x] +4 пары + persistence + SR + dashboard tile (PR #9)
 
-## 🔴 High priority — следующие сессии
+### High + Medium priority sweep (v0.6)
+- [x] **#3** AI-judge свободного ответа через Gemini 2.5 Flash (PR #12)
+- [x] **#2** Google auth + Supabase cloud sync (PR #13) — email/password только, OAuth отложен
+- [x] **#4** Per-pair authenticity breakdown в `/progress` (PR #14)
+- [x] **#5** Confusion matrix heatmap (PR #14)
+- [x] **#6** True per-card SM-2 (PR #15)
+- [x] **#7** Knowledge expansion — `/facs` глоссарий + cultural caveats (PR #16)
+- [x] **#8** SEO content pages — `/about`, `/faq`, `/physiognomy-vs-science` (PR #16)
+
+## 🔴 High priority (отложено)
 
 ### 1. Real-face гибрид (3-4 ч)
 Curated Unsplash портретов (~20-30 шт) + опциональный режим `/real` или toggle в `/train`. Адресует главное возражение ревью: «AI-лица могут не переноситься в реальный мир». Сохраняем AI для пар (same-face consistency), добавляем real для базовых эмоций.
 
-### 2. Google auth + cloud progress sync (4-6 ч)
-Прогресс между устройствами. Без этого high churn при смене браузера/устройства. Подходы: Supabase (Google OAuth + Postgres + free tier 500 MB), NextAuth + Vercel Postgres, Clerk. MVP-схема: `progress(user_id text PK, data jsonb, updated_at)`. Last-write-wins на конфликты, debounced upload на каждый recordAnswer.
+**Задача требует контентной курации (нельзя scriptовать на 100%) — поэтому отложена. Когда возьмёмся — нужно time для подбора фотографий с подтверждённой эмоциональной семантикой.**
 
-### 3. AI-judge свободного ответа (3-4 ч)
-Пользователь пишет описание («вижу контролируемый гнев — лёгкое напряжение челюсти, прямой холодный взгляд»). GPT-4o оценивает с partial credit, объясняет что упустил. Глубже учит чем MCQ. Опасность: цена за токен; ограничить N запросов в день.
-
-## 🟡 Medium priority
-
-### 4. Per-pair breakdown в /progress (1 ч)
-Сейчас authenticity показывается агрегатной accuracy. Drill into per-pair stats: какие пары стабильно проходишь, какие путаешь.
-
-### 5. Confusion matrix heatmap (2 ч)
-Сейчас top-5 список конфузов. Сделать heatmap всех эмоций × всех эмоций, цвет = частота путаницы. На мобиле — скроллируемая таблица.
-
-### 6. Адаптивная сложность внутри тиров (2-3 ч)
-Текущий `pickNextCard` уже использует SR (PR #2), но это базовый SM-2-lite. Можно сделать честный per-card spacing вместо per-emotion, плюс учитывать time-to-answer как proxy сложности.
-
-### 7. Расширение базы знаний (2 ч)
-- Раздел "Истоки физиогномики" с критической оценкой школ (academic honesty)
-- Глоссарий FACS Action Units на отдельной странице
-- Cultural caveats — где маркеры работают / не работают кросс-культурно
-
-### 8. SEO content pages (3 ч)
-- `/about` — про проект, источники, кто стоит
-- `/faq` — типовые вопросы
-- `/physiognomy-vs-science` — educational, для SEO + credibility
+### Google OAuth (поверх PR #13 email/password)
+Сейчас auth работает через email/password. Google OAuth — дополнительно ~10 мин setup в Google Cloud Console + добавление callback URL. Низко-висящий фрукт.
 
 ## 🟢 Low priority / nice-to-have
+
+### 9. Custom domain (30 мин)
 
 ### 9. Custom domain (30 мин)
 emo-training.vercel.app → что-то типа emoread.io или поддомен.
