@@ -4,7 +4,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AUTHENTICITY_PAIRS, type AuthenticityPair } from '@/data/authenticity_pairs';
+import {
+  AUTHENTICITY_PAIRS,
+  pickRandomVariant,
+  type AuthenticityPair,
+  type AuthenticityVariant,
+} from '@/data/authenticity_pairs';
 import {
   authenticityDueRanked,
   authenticityTotals,
@@ -19,6 +24,7 @@ type Side = 'genuine' | 'performed';
 
 export default function AuthenticityPage() {
   const [pair, setPair] = useState<AuthenticityPair | null>(null);
+  const [variant, setVariant] = useState<AuthenticityVariant | null>(null);
   const [phase, setPhase] = useState<Phase>('question');
   const [chosen, setChosen] = useState<Side | null>(null);
   const [genuineOnLeft, setGenuineOnLeft] = useState(true);
@@ -77,6 +83,7 @@ export default function AuthenticityPage() {
     }
 
     setPair(pick!);
+    setVariant(pickRandomVariant(pick!));
     setGenuineOnLeft(Math.random() < 0.5);
     setChosen(null);
     setPhase('question');
@@ -101,7 +108,7 @@ export default function AuthenticityPage() {
     nextPair();
   }
 
-  if (!pair) {
+  if (!pair || !variant) {
     return (
       <main className="min-h-screen flex items-center justify-center">
         <div className="eyebrow text-ink-3">Загружаем</div>
@@ -111,8 +118,8 @@ export default function AuthenticityPage() {
 
   const leftSide: Side = genuineOnLeft ? 'genuine' : 'performed';
   const rightSide: Side = genuineOnLeft ? 'performed' : 'genuine';
-  const leftImage = leftSide === 'genuine' ? pair.genuineImagePath : pair.performedImagePath;
-  const rightImage = rightSide === 'genuine' ? pair.genuineImagePath : pair.performedImagePath;
+  const leftImage = leftSide === 'genuine' ? variant.genuineImagePath : variant.performedImagePath;
+  const rightImage = rightSide === 'genuine' ? variant.genuineImagePath : variant.performedImagePath;
   const accuracyPct = persistentStats.attempts > 0 ? Math.round(persistentStats.accuracy * 100) : 0;
 
   return (
