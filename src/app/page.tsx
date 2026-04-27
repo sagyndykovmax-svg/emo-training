@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { getProgress } from '@/lib/storage';
 import { DemoCard } from '@/components/DemoCard';
+import { AuthBadge } from '@/components/AuthBadge';
 import { track } from '@/lib/analytics';
 
 const HERO_FACES = [
@@ -43,7 +44,8 @@ export default function HomePage() {
             <span className="display text-2xl">Emotion Training</span>
             <span className="eyebrow hidden md:inline">№ 01 · 2026</span>
           </Link>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 sm:gap-6">
+            <AuthBadge />
             <Link href="/progress" className="eyebrow hover:text-ink transition">
               Прогресс
             </Link>

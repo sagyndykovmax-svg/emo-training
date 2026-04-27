@@ -12,6 +12,7 @@ import {
   recordAuthenticityAnswer,
 } from '@/lib/storage';
 import { track } from '@/lib/analytics';
+import { AuthBadge } from '@/components/AuthBadge';
 
 type Phase = 'question' | 'feedback';
 type Side = 'genuine' | 'performed';
@@ -138,9 +139,12 @@ export default function AuthenticityPage() {
               </>
             )}
           </div>
-          <Link href="/train" className="eyebrow hover:text-ink transition">
-            Основная тренировка
-          </Link>
+          <div className="flex items-center gap-4">
+            <AuthBadge />
+            <Link href="/train" className="eyebrow hover:text-ink transition">
+              Основная тренировка
+            </Link>
+          </div>
         </div>
       </header>
 
