@@ -1,5 +1,36 @@
 # Progress Log
 
+## v0.8 — 2026-04-27 (polish + infra)
+
+Маленький батч после v0.7: визуальное разнообразие в /authenticity, content-trim на /about, и operational fix для Supabase free-tier.
+
+### PR #22 — Authenticity: 3 visual variants per pair
+Адресует фидбек «при повторе пары — те же два лица». Каждая из 10 пар теперь имеет **3 визуальных variant'а** (varied age/gender/ethnicity), variant выбирается случайно при каждом показе. SR scheduling per pair-id остаётся.
+
+- Schema: `variants: AuthenticityVariant[]` вместо плоских genuineImagePath/performedImagePath
+- Content: 20 новых variants через Nano Banana, ~$0.80
+- Re-roll auth-shame-genuine с softer blush ("subtle natural warmth, not theatrical") по фидбеку — было слишком красное лицо
+- Bundle: public/training/ → 9.3 MB
+
+### PR #23 — About-page trim
+Убрал секцию "Стек и принципы" из /about — она была про инфраструктуру (стек, GitHub link, аналитика), что является noise для end users. Остались более важные секции: **Зачем** / **На чём построен (источники)** / **Часть экосистемы** / **Дисклеймер**. Tech-info по-прежнему доступна через GitHub link в footer.
+
+### PR #24 — Vercel cron keep-alive для Supabase
+Free-tier Supabase pauses проекты после 7 дней без API-активности. С низким трафиком (single-user MVP) это в какой-то момент молча сломало бы /account и cloud-sync. Решение:
+
+- `/api/cron/keep-alive` route — Edge handler, пингует `${SUPABASE_URL}/auth/v1/health`, защищён CRON_SECRET от публичного abuse
+- `vercel.json` — расписание `0 0 * * 1,4` (Monday + Thursday 00:00 UTC, ~3-day intervals, безопасный запас под 7-дневный порог)
+- CRON_SECRET сгенерирован (`crypto.randomBytes(32).hex`) и добавлен в Vercel Production env vars автоматически через CLI
+- Локально протестирован: curl без auth → 401, curl с bearer → 200 + Supabase health за ~1.5s
+- Стоимость: $0 (Vercel Hobby даёт 2 cron jobs бесплатно)
+
+### Build state
+- 15 routes (с v0.7 +1: /api/cron/keep-alive)
+- 12 static + 3 dynamic + 1 cron
+- 58 unit tests, ~1 sec прогон
+
+---
+
 ## v0.7 — 2026-04-27 (low-priority + tech-debt sweep)
 
 Закрывает почти весь low-priority блок и tech-debt из roadmap. 4 PR в этой сессии (плюс этот docs).
@@ -282,6 +313,11 @@ Surprise pair — единственный фундаментально слаб
 - [x] **Google OAuth** поверх email/password (PR #18) — нужен Google Cloud Console setup от пользователя
 - [x] **#14** Unit tests — 58 tests via vitest (PR #19)
 - [x] **#13** Социальный sharing с динамическим OG image (PR #20)
+
+### Polish + infra (v0.8)
+- [x] Authenticity 3 visual variants per pair (PR #22) — закрывает фидбек «опять те же лица»
+- [x] About-page trim (PR #23) — убрана инфраструктурная секция
+- [x] Vercel cron keep-alive для Supabase free-tier (PR #24) — защита от 7-day inactivity pause
 
 ## ⏳ Осталось
 
