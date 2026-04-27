@@ -118,49 +118,60 @@ export const TRAINING_CARDS: TrainingCard[] = [
 ];
 
 /**
- * Card selection with spaced-repetition priority.
+ * Card selection with spaced-repetition priority (v0.7 — true per-card SM-2).
  *
  * Order of priority:
- *   1. **Due-for-review emotions** (scheduled by `recordAnswer`). The most
- *      overdue emotion's cards win. Within that emotion, prefer the card the
- *      user has seen LEAST RECENTLY (so we don't repeat the exact same image).
- *   2. **Unseen cards** at this tier.
- *   3. **Random fallback** at this tier.
+ *   1. **Most-overdue card** (per-card SM-2, computed by storage.dueCardsRanked).
+ *      A card you got wrong gets pushed back ~1 attempt; ones you nailed
+ *      drift further out via SM-2 ease factor.
+ *   2. **Unseen card** at this tier (we still want breadth of exposure).
+ *   3. **Most-overdue emotion's card** (legacy emotion-level SR — fallback for
+ *      emotions where no specific card is yet due).
+ *   4. **Random fallback** at this tier.
  *
- * `dueRanked` and `recentCardIds` arrive pre-computed from the caller (the
- * training page) — keeping this module storage-free for testability.
+ * All ranked lists arrive pre-computed from the caller — keeping this module
+ * storage-free for testability.
  */
 export function pickNextCard(opts: {
   unlockedTier: 1 | 2 | 3;
   seenCardIds: string[];
-  /** Emotion ids ordered by how overdue they are (most overdue first). */
+  /** Card ids most overdue per per-card SM-2 (highest priority). */
+  dueCardIds?: string[];
+  /** Emotion ids most overdue per emotion-level SR (fallback). */
   dueRanked?: EmotionId[];
-  /** The exact card ids user saw most recently — to avoid back-to-back repeats. */
+  /** Last ~5 card ids seen this session — to avoid back-to-back repeats. */
   recentCardIds?: string[];
 }): TrainingCard | null {
   const eligible = TRAINING_CARDS.filter((c) => c.difficulty <= opts.unlockedTier);
   if (eligible.length === 0) return null;
 
   const recentSet = new Set(opts.recentCardIds?.slice(0, 5) ?? []);
+  const eligibleById = new Map(eligible.map((c) => [c.id, c] as const));
 
-  // 1. Due for review — pick the most overdue emotion's least-recently-seen card.
-  if (opts.dueRanked && opts.dueRanked.length > 0) {
-    for (const emotionId of opts.dueRanked) {
-      const cards = eligible.filter((c) => c.emotionId === emotionId && !recentSet.has(c.id));
-      if (cards.length > 0) {
-        // Prefer unseen cards within the due emotion.
-        const unseen = cards.filter((c) => !opts.seenCardIds.includes(c.id));
-        const pool = unseen.length > 0 ? unseen : cards;
-        return pool[Math.floor(Math.random() * pool.length)];
-      }
+  // 1. Per-card SM-2: most-overdue card the user has actually seen before.
+  if (opts.dueCardIds && opts.dueCardIds.length > 0) {
+    for (const cardId of opts.dueCardIds) {
+      if (recentSet.has(cardId)) continue;
+      const card = eligibleById.get(cardId);
+      if (card) return card;
     }
   }
 
-  // 2. Unseen at this tier.
+  // 2. Unseen at this tier — gives breadth, especially early.
   const unseen = eligible.filter((c) => !opts.seenCardIds.includes(c.id) && !recentSet.has(c.id));
   if (unseen.length > 0) return unseen[Math.floor(Math.random() * unseen.length)];
 
-  // 3. Random fallback (excluding recently-seen).
+  // 3. Emotion-level SR fallback: pick a card from the most-overdue emotion
+  //    when per-card SR has nothing due (e.g. all cards of that emotion are
+  //    still in their interval).
+  if (opts.dueRanked && opts.dueRanked.length > 0) {
+    for (const emotionId of opts.dueRanked) {
+      const cards = eligible.filter((c) => c.emotionId === emotionId && !recentSet.has(c.id));
+      if (cards.length > 0) return cards[Math.floor(Math.random() * cards.length)];
+    }
+  }
+
+  // 4. Random fallback (excluding recently-seen).
   const pool = eligible.filter((c) => !recentSet.has(c.id));
   if (pool.length === 0) return eligible[Math.floor(Math.random() * eligible.length)];
   return pool[Math.floor(Math.random() * pool.length)];

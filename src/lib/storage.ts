@@ -25,6 +25,37 @@ export interface CategoryStats {
   streak?: number;
 }
 
+/**
+ * Per-card SM-2 stats (added v0.7).
+ *
+ * Adapts the classic SM-2 algorithm (Wozniak 1985) to card-attempts as the
+ * clock instead of days. Each individual card carries its own ease factor
+ * and interval, so two cards in the same emotion can have very different
+ * schedules — one easy, one stuck.
+ *
+ * After each answer we map outcome → quality:
+ *   wrong   → 0
+ *   partial → 2
+ *   correct → 4 (we don't track "perfect quick answer = 5" yet)
+ *
+ * If quality < 3: reset interval to 1, keep eFactor unchanged (no penalty).
+ * If quality ≥ 3: interval = ceil(prev_interval × eFactor), bumped from
+ * an initial 1 → 6 → 6×EF chain. eFactor floats by:
+ *   EF' = max(1.3, EF + (0.1 - (5-q)*(0.08 + (5-q)*0.02)))
+ */
+export interface CardStats {
+  attempts: number;
+  correct: number;
+  partial: number;
+  lastSeenAt: number;
+  /** SM-2 ease factor; default 2.5, floor 1.3. */
+  eFactor: number;
+  /** Last computed interval in card-attempts. */
+  interval: number;
+  /** Global card-attempt index when this card is due. */
+  nextReviewAt: number;
+}
+
 export interface AnswerRecord {
   cardId: string;
   correctEmotion: EmotionId;
@@ -63,6 +94,8 @@ export interface Progress {
   totalTimeMs: number;
   /** Per-pair stats for /authenticity mode. Key: pair.id. */
   authenticity: Partial<Record<string, AuthenticityPairStats>>;
+  /** Per-card SM-2 stats (added v0.7). Key: card.id. */
+  byCard: Partial<Record<string, CardStats>>;
 }
 
 const RECENT_CAP = 200;
@@ -78,6 +111,7 @@ function emptyProgress(): Progress {
     recentAnswers: [],
     totalTimeMs: 0,
     authenticity: {},
+    byCard: {},
   };
 }
 
@@ -97,6 +131,7 @@ export function getProgress(): Progress {
       recentAnswers: parsed.recentAnswers ?? [],
       totalTimeMs: parsed.totalTimeMs ?? 0,
       authenticity: parsed.authenticity ?? {},
+      byCard: parsed.byCard ?? {},
     };
   } catch {
     return emptyProgress();
@@ -159,6 +194,24 @@ export function recordAnswer(input: RecordAnswerInput): {
 
   if (!p.seenCardIds.includes(input.cardId)) p.seenCardIds.push(input.cardId);
 
+  // ── Per-card SM-2 update (added v0.7) ─────────────────────────────────────
+  const cardClock = totalCardAttempts(p) + 1; // +1 because this answer is being added
+  const cardStats = p.byCard[input.cardId] ?? {
+    attempts: 0,
+    correct: 0,
+    partial: 0,
+    lastSeenAt: 0,
+    eFactor: 2.5,
+    interval: 0,
+    nextReviewAt: 0,
+  };
+  cardStats.attempts += 1;
+  cardStats.lastSeenAt = Date.now();
+  if (input.outcome === 'correct') cardStats.correct += 1;
+  if (input.outcome === 'partial') cardStats.partial += 1;
+  const sm2Updated = sm2Step(cardStats, input.outcome, cardClock);
+  p.byCard[input.cardId] = sm2Updated;
+
   // Append to recent answers log (newest first, capped).
   p.recentAnswers.unshift({
     cardId: input.cardId,
@@ -209,6 +262,70 @@ function totalAttemptsFor(p: Progress): number {
   let n = 0;
   for (const s of Object.values(p.byCategory)) if (s) n += s.attempts;
   return n;
+}
+
+/**
+ * Sum of attempts across all individual cards. Used as the "global card-attempt
+ * clock" for per-card SM-2 scheduling (added v0.7). Independent of the
+ * emotion-level clock so card SR doesn't drift if the schemas evolve.
+ */
+function totalCardAttempts(p: Progress): number {
+  let n = 0;
+  for (const s of Object.values(p.byCard ?? {})) if (s) n += s.attempts;
+  return n;
+}
+
+/**
+ * One step of SM-2 (Wozniak 1985), adapted to card-attempts as the clock.
+ *
+ * Quality mapping from our outcomes:
+ *   wrong   → 0  (resets interval to 1, no EF penalty)
+ *   partial → 2  (resets interval to 1, no EF penalty)
+ *   correct → 4  (advance interval by EF, slight EF bump)
+ *
+ * EF formula: EF' = max(1.3, EF + (0.1 - (5-q)*(0.08 + (5-q)*0.02)))
+ *
+ * Interval growth on correct:
+ *   first correct (no prior interval) → 1
+ *   second correct                    → 6
+ *   subsequent                        → ceil(prev × EF)
+ *
+ * Returns the mutated stats object (for ergonomic chaining).
+ */
+function sm2Step(stats: CardStats, outcome: Outcome, clock: number): CardStats {
+  const q = outcome === 'correct' ? 4 : outcome === 'partial' ? 2 : 0;
+  if (q < 3) {
+    stats.interval = 1;
+  } else {
+    if (stats.interval === 0) stats.interval = 1;
+    else if (stats.interval === 1) stats.interval = 6;
+    else stats.interval = Math.ceil(stats.interval * stats.eFactor);
+    // Apply EF update only on quality≥3 (standard SM-2 behavior).
+    const newEF = stats.eFactor + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02));
+    stats.eFactor = Math.max(1.3, parseFloat(newEF.toFixed(3)));
+  }
+  // Cap interval to keep cards from disappearing forever in our card-attempt clock.
+  stats.interval = Math.min(stats.interval, 100);
+  stats.nextReviewAt = clock + stats.interval;
+  return stats;
+}
+
+/**
+ * Card IDs ordered by how overdue they are (most overdue first), filtered to
+ * `eligibleIds`. Cards that have never been answered are NOT included
+ * (they're handled by the "unseen" branch of pickNextCard).
+ */
+export function dueCardsRanked(p: Progress, eligibleIds: string[]): string[] {
+  const clock = totalCardAttempts(p);
+  const eligible = new Set(eligibleIds);
+  const ranked: { id: string; overdueBy: number }[] = [];
+  for (const [id, stats] of Object.entries(p.byCard ?? {})) {
+    if (!stats || !eligible.has(id)) continue;
+    const overdueBy = clock - stats.nextReviewAt;
+    if (overdueBy >= 0) ranked.push({ id, overdueBy });
+  }
+  ranked.sort((a, b) => b.overdueBy - a.overdueBy);
+  return ranked.map((r) => r.id);
 }
 
 /**
