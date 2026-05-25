@@ -1,5 +1,31 @@
 # Progress Log
 
+## v1.0 — 2026-05-25 (Supabase keep-alive: окончательное решение)
+
+Supabase продолжал паузиться несмотря на PR #24 (Vercel cron) и PR #26 (daily schedule). Серия из 6 итераций диагностики привела к рабочему решению.
+
+### PR #28 — Cron: /rest/v1/ вместо /auth/v1/health
+`auth/v1/health` не засчитывается Supabase как «активность проекта» — только обращения к database layer. Переключили на `/rest/v1/`. Но Vercel cron всё равно оказался ненадёжным посредником.
+
+### PR #29 — GitHub Actions workflow (manual trigger)
+Добавлен `supabase-keepalive.yml` — GitHub Actions с `workflow_dispatch` (кнопка Run в UI) и расписанием 10:00 UTC. Надёжнее Vercel crons для HTTP-пингов.
+
+### PR #30 — Прямой пинг Supabase (без Vercel)
+Убрали цепочку GitHub → Vercel → Supabase. Workflow теперь пингует Supabase напрямую — меньше точек отказа.
+
+### PR #31 — Endpoint: таблица вместо корня REST
+`/rest/v1/` (root) требует `service_role` ключ на новых версиях Supabase. Переключили на `/rest/v1/progress?select=user_id&limit=1` — работает с anon ключом, возвращает 200 + `[]` (RLS фильтрует строки, но запрос засчитывается как активность).
+
+### PR #32 — Правильное имя колонки (user_id, не id)
+`progress` таблица использует `user_id` как primary key, не `id`. Финальный fix. Первый зелёный run: **#7 ✅ Success**.
+
+### Итоговая архитектура keep-alive
+- GitHub Actions (primary): ежедневно 10:00 UTC → `SUPABASE_URL/rest/v1/progress?select=user_id&limit=1`
+- Vercel cron (backup): ежедневно 12:00 UTC → `/api/cron/keep-alive` → тот же endpoint
+- Secrets: `SUPABASE_URL` + `SUPABASE_ANON_KEY` в GitHub, `CRON_SECRET` в Vercel
+
+---
+
 ## v0.9 — 2026-05-11 (cron hotfix)
 
 ### PR #26 — Cron расписание: daily вместо Mon+Thu
