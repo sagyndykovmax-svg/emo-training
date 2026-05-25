@@ -31,7 +31,7 @@ jobs:
           STATUS=$(curl -s -o /tmp/body.txt -w "%{http_code}" \
             -H "apikey: $SUPABASE_ANON_KEY" \
             -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
-            "$SUPABASE_URL/rest/v1/progress?select=id&limit=1")
+            "$SUPABASE_URL/rest/v1/progress?select=user_id&limit=1")
           BODY=$(cat /tmp/body.txt | head -c 200)
           echo "HTTP status: $STATUS"
           echo "Response (first 200 chars): $BODY"
