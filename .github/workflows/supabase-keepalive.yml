@@ -25,10 +25,13 @@ jobs:
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           echo "Pinging Supabase at $(date -u)"
+          # Query the progress table — anon key works here, returns 200
+          # even if RLS filters all rows (empty array is still activity).
+          # The root /rest/v1/ requires service_role key on newer Supabase.
           STATUS=$(curl -s -o /tmp/body.txt -w "%{http_code}" \
             -H "apikey: $SUPABASE_ANON_KEY" \
             -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
-            "$SUPABASE_URL/rest/v1/")
+            "$SUPABASE_URL/rest/v1/progress?select=id&limit=1")
           BODY=$(cat /tmp/body.txt | head -c 200)
           echo "HTTP status: $STATUS"
           echo "Response (first 200 chars): $BODY"
