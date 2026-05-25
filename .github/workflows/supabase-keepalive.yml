@@ -1,34 +1,39 @@
 name: Supabase keep-alive
 
-# Pings the PostgREST API daily so the free-tier project never hits
-# the 7-day inactivity threshold and gets auto-paused.
+# Pings the Supabase PostgREST API directly so the free-tier project
+# never hits the 7-day inactivity threshold and gets auto-paused.
 #
-# More reliable than Vercel crons for this use-case.
+# Hits Supabase directly — no Vercel middleman, fewer failure points.
 # Manual "Run workflow" button available in the Actions tab on GitHub.
 #
-# Required secret: CRON_SECRET (Settings → Secrets → Actions)
-# Must match the CRON_SECRET env var set in Vercel.
+# Required secrets (Settings → Secrets → Actions):
+#   SUPABASE_URL      — value of NEXT_PUBLIC_SUPABASE_URL in Vercel
+#   SUPABASE_ANON_KEY — value of NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel
 
 on:
   schedule:
     - cron: '0 10 * * *'   # Daily at 10:00 UTC
-  workflow_dispatch:         # Manual trigger button in GitHub Actions UI
+  workflow_dispatch:         # Manual "Run workflow" button in GitHub Actions UI
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping keep-alive endpoint
+      - name: Ping Supabase REST API
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          echo "Pinging Supabase keep-alive at $(date -u)"
+          echo "Pinging Supabase at $(date -u)"
           STATUS=$(curl -s -o /tmp/body.txt -w "%{http_code}" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            https://emo-training.vercel.app/api/cron/keep-alive)
-          BODY=$(cat /tmp/body.txt)
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            "$SUPABASE_URL/rest/v1/")
+          BODY=$(cat /tmp/body.txt | head -c 200)
           echo "HTTP status: $STATUS"
-          echo "Response: $BODY"
+          echo "Response (first 200 chars): $BODY"
           if [ "$STATUS" != "200" ]; then
-            echo "::error::Keep-alive failed — HTTP $STATUS"
+            echo "::error::Supabase unreachable — HTTP $STATUS"
             exit 1
           fi
           echo "✅ Supabase is alive"
